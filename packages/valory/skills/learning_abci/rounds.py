@@ -38,6 +38,7 @@ from packages.valory.skills.learning_abci.payloads import (
     DataPullPayload,
     DecisionMakingPayload,
     TxPreparationPayload,
+    coincapPayload
 )
 
 
@@ -102,7 +103,16 @@ class SynchronizedData(BaseSynchronizedData):
     def tx_submitter(self) -> str:
         """Get the round that submitted a tx to transaction_settlement_abci."""
         return str(self.db.get_strict("tx_submitter"))
-
+    
+    @property
+    def rateUSD(self) -> Optional[str]:
+        """Get the rateUSD."""
+        return self.db.get("rateUSD", None)
+    
+    @property
+    def participant_to_rate_round(self) -> DeserializedCollection:
+        """Get the participants to the rate round."""
+        return self._get_deserialized("participant_to_rate_round")
 
 class DataPullRound(CollectSameUntilThresholdRound):
     """DataPullRound"""
@@ -127,6 +137,28 @@ class DataPullRound(CollectSameUntilThresholdRound):
 
     # Event.ROUND_TIMEOUT  # this needs to be referenced for static checkers
 
+class coincapRound(CollectSameUntilThresholdRound):
+    """coincapRound"""
+
+    payload_class = coincapPayload
+    synchronized_data_class = SynchronizedData
+    done_event = Event.DONE
+    no_majority_event = Event.NO_MAJORITY
+
+    # Collection key specifies where in the synchronized data the agento to payload mapping will be stored
+    collection_key = get_name(SynchronizedData.participant_to_rate_round)
+    selection_key = (
+        get_name(SynchronizedData.rateUSD),
+    )
+
+    # Selection key specifies how to extract all the different objects from each agent's payload
+    # and where to store it in the synchronized data. Notice that the order follows the same order
+    # from the payload class.
+    selection_key = (
+        get_name(SynchronizedData.rateUSD),
+    )
+
+    # Event.ROUND_TIMEOUT  # this needs to be referenced for static checkers
 
 class DecisionMakingRound(CollectSameUntilThresholdRound):
     """DecisionMakingRound"""
@@ -188,6 +220,11 @@ class LearningAbciApp(AbciApp[Event]):
         DataPullRound: {
             Event.NO_MAJORITY: DataPullRound,
             Event.ROUND_TIMEOUT: DataPullRound,
+            Event.DONE: coincapRound,
+        },
+        coincapRound: {
+            Event.NO_MAJORITY: coincapRound,
+            Event.ROUND_TIMEOUT: coincapRound,
             Event.DONE: DecisionMakingRound,
         },
         DecisionMakingRound: {

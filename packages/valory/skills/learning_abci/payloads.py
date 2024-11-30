@@ -48,3 +48,8 @@ class TxPreparationPayload(BaseTxPayload):
 
     tx_submitter: Optional[str] = None
     tx_hash: Optional[str] = None
+
+@dataclass(frozen=True)
+class coincapPayload(BaseTxPayload):
+    """Represent a transaction payload for the coincapRound."""
+    rateUSD: Optional[str]

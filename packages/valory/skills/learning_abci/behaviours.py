@@ -51,6 +51,7 @@ from packages.valory.skills.learning_abci.payloads import (
     DataPullPayload,
     DecisionMakingPayload,
     TxPreparationPayload,
+    coincapPayload
 )
 from packages.valory.skills.learning_abci.rounds import (
     DataPullRound,
@@ -59,6 +60,7 @@ from packages.valory.skills.learning_abci.rounds import (
     LearningAbciApp,
     SynchronizedData,
     TxPreparationRound,
+    coincapRound
 )
 from packages.valory.skills.transaction_settlement_abci.payload_tools import (
     hash_payload_to_hex,
@@ -278,6 +280,56 @@ class DataPullBehaviour(LearningBaseBehaviour):  # pylint: disable=too-many-ance
 
         return balance
 
+class coincapBehaviour(LearningBaseBehaviour):
+    """coincapBehaviour"""
+    
+    matching_round: Type[AbstractRound] = coincapRound
+
+    def async_act(self) -> Generator:
+        """Do the act, supporting asynchronous execution."""
+
+        with self.context.benchmark_tool.measure(self.behaviour_id).local():
+            sender = self.context.agent_address
+
+            # Get the rateUSD
+            rateUSD = yield from self.get_eth_rate_usd()
+            self.context.logger.info(f"ETH RateUSD: {rateUSD}")
+           
+
+            payload = coincapPayload(sender=sender, rateUSD=rateUSD)
+
+        with self.context.benchmark_tool.measure(self.behaviour_id).consensus():
+            yield from self.send_a2a_transaction(payload)
+            yield from self.wait_until_round_end()
+
+        self.set_done()
+
+    def get_eth_rate_usd(self) -> Generator[None, None, Optional[float]]:
+        """Get ETH rate to USD from CoinCap"""
+
+        # Prepare the url and the headers
+        url = "https://api.coincap.io/v2/rates/ethereum"
+        headers = {"accept": "application/json"}
+
+        # Make the HTTP request to CoinCap API
+        response = yield from self.get_http_response(
+            method="GET", url=url, headers=headers
+        )
+
+        # Handle HTTP errors
+        if response.status_code != HTTP_OK:
+            self.context.logger.error(
+                f"Error while pulling the rate from CoinCap: {response.body}"
+            )
+            return None
+
+        # Load the response
+        api_data = json.loads(response.body)
+        rate_usd = float(api_data["data"]["rateUsd"])
+
+        self.context.logger.info(f"Got ETH rate to USD from CoinCap: {rate_usd}")
+
+        return rate_usd
 
 class DecisionMakingBehaviour(
     LearningBaseBehaviour
@@ -658,6 +710,7 @@ class LearningRoundBehaviour(AbstractRoundBehaviour):
     abci_app_cls = LearningAbciApp  # type: ignore
     behaviours: Set[Type[BaseBehaviour]] = [  # type: ignore
         DataPullBehaviour,
+        coincapBehaviour,
         DecisionMakingBehaviour,
-        TxPreparationBehaviour,
+        TxPreparationBehaviour
     ]
