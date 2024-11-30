@@ -293,9 +293,18 @@ class coincapBehaviour(LearningBaseBehaviour):
 
             # Get the rateUSD
             rateUSD = yield from self.get_eth_rate_usd()
+            #if string is empty, return None
+            if rateUSD == "":
+                rateUSD = None
+            
             self.context.logger.info(f"ETH RateUSD: {rateUSD}")
-           
 
+            #store the rateUSD in IPFS
+            rateUSD_ipfs_hash = yield from self.store_EthRateUSD(rateUSD)
+
+            #reading the rateUSD from IPFS and comparing with stored rateUSD
+            rateUSD_IPFS = yield from self.get_EthRateUSD(rateUSD_ipfs_hash)
+        
             payload = coincapPayload(sender=sender, rateUSD=rateUSD)
 
         with self.context.benchmark_tool.measure(self.behaviour_id).consensus():
@@ -330,6 +339,23 @@ class coincapBehaviour(LearningBaseBehaviour):
         self.context.logger.info(f"Got ETH rate to USD from CoinCap: {rate_usd}")
 
         return rate_usd
+    
+    def store_EthRateUSD(self, rateUSD) -> Generator[None, None, Optional[str]]:
+        """Store the token price in IPFS"""
+        data = {"rateUSD": rateUSD}
+        rateUSD_ipfs_hash = yield from self.send_to_ipfs(
+            filename=self.metadata_filepath, obj=data, filetype=SupportedFiletype.JSON
+        )
+        self.context.logger.info(
+            f"Price data stored in IPFS: https://gateway.autonolas.tech/ipfs/{rateUSD_ipfs_hash}"
+        )
+        return rateUSD_ipfs_hash
+    
+    def get_EthRateUSD(self, rateUSD_ipfs_hash) -> Generator[None, None, Optional[str]]:
+        """Get the rateUSD from IPFS"""
+        rateUSD = yield from self.get_from_ipfs(rateUSD_ipfs_hash, SupportedFiletype.JSON)
+        self.context.logger.info(f"Got rateUSD from IPFS: {rateUSD}")
+        return rateUSD
 
 class DecisionMakingBehaviour(
     LearningBaseBehaviour
