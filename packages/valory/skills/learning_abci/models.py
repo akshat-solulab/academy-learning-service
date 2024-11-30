@@ -59,8 +59,13 @@ class Params(BaseParams):
         # multisend address is used in other skills, so we cannot pop it using _ensure
         self.multisend_address = kwargs.get("multisend_address", "")
 
+        self.coincap_api_key = kwargs.get("coincap_api_key","https://api.coincap.io/v2/rates/ethereum")
+
         super().__init__(*args, **kwargs)
 
 
 class CoingeckoSpecs(ApiSpecs):
     """A model that wraps ApiSpecs for Coingecko API."""
+
+class CoincapSpecs(ApiSpecs):
+    """A model that wraps ApiSpecs for coincap API"""
