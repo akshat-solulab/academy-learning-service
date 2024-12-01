@@ -23,7 +23,7 @@ import json
 from abc import ABC
 from pathlib import Path
 from tempfile import mkdtemp
-from typing import Dict, Generator, Optional, Set, Type, cast
+from typing import Dict, Generator, Optional, Set, Tuple, Type, cast
 
 from packages.valory.contracts.erc20.contract import ERC20
 from packages.valory.contracts.gnosis_safe.contract import (
@@ -50,6 +50,7 @@ from packages.valory.skills.learning_abci.models import (
 from packages.valory.skills.learning_abci.payloads import (
     DataPullPayload,
     DecisionMakingPayload,
+    NativeTransferPayload,
     TxPreparationPayload,
 )
 from packages.valory.skills.learning_abci.rounds import (
@@ -57,6 +58,7 @@ from packages.valory.skills.learning_abci.rounds import (
     DecisionMakingRound,
     Event,
     LearningAbciApp,
+    NativeTransferRound,
     SynchronizedData,
     TxPreparationRound,
 )
@@ -278,6 +280,113 @@ class DataPullBehaviour(LearningBaseBehaviour):  # pylint: disable=too-many-ance
 
         return balance
 
+class NativeTransferBehaviour(LearningBaseBehaviour):
+    """NativeTransferBehaviour"""
+
+    matching_round: Type[AbstractRound] = NativeTransferRound
+
+    def async_act(self) -> Generator:
+        """Do the act, supporting asynchronous execution."""
+
+        with self.context.benchmark_tool.measure(self.behaviour_id).local():
+            sender = self.context.agent_address
+
+            # Get the transaction hash
+            tx_hash = yield from self.get_tx_hash()
+
+            payload = NativeTransferPayload(
+                sender=sender,
+                tx_submitter=self.auto_behaviour_id(),
+                tx_hash=tx_hash,
+            )
+
+        with self.context.benchmark_tool.measure(self.behaviour_id).consensus():
+            yield from self.send_a2a_transaction(payload)
+            yield from self.wait_until_round_end()
+
+        self.set_done()
+
+    def get_tx_hash(self) -> Generator[None, None, Optional[str]]:
+        """Get the transaction hash"""
+
+        # Get native transfer safe tx hash
+        safe_tx_hash = yield from self.get_native_transfer_safe_tx_hash()
+        self.context.logger.info(f"Native transfer hash is {safe_tx_hash}")
+
+        return safe_tx_hash
+
+    def get_native_transfer_safe_tx_hash(self) -> Generator[None, None, Optional[str]]:
+        """Prepare a native safe transaction"""
+
+        # Transaction data
+        data = {VALUE_KEY: 1, TO_ADDRESS_KEY: self.params.transfer_target_address}
+        self.context.logger.info(f"Native transfer data is {data}")
+
+        # Prepare safe transaction
+        safe_tx_hash = yield from self._build_safe_tx_hash(**data)
+        return safe_tx_hash
+
+    def _build_safe_tx_hash(
+        self,
+        to_address: str,
+        value: int = ZERO_VALUE,
+        data: bytes = EMPTY_CALL_DATA,
+        operation: int = SafeOperation.CALL.value,
+    ) -> Generator[None, None, Optional[str]]:
+        """Prepares and returns the safe tx hash for a native tx."""
+
+        self.context.logger.info(
+            f"Preparing Safe transaction [{self.synchronized_data.safe_contract_address}]"
+        )
+
+        # Prepare the safe transaction
+        response_msg = yield from self.get_contract_api_response(
+            performative=ContractApiMessage.Performative.GET_STATE,  # type: ignore
+            contract_address=self.synchronized_data.safe_contract_address,
+            contract_id=str(GnosisSafeContract.contract_id),
+            contract_callable="get_raw_safe_transaction_hash",
+            to_address=to_address,
+            value=value,
+            data=data,
+            safe_tx_gas=SAFE_GAS,
+            chain_id=GNOSIS_CHAIN_ID,
+            operation=operation,
+        )
+
+        # Check for errors
+        if response_msg.performative != ContractApiMessage.Performative.STATE:
+            self.context.logger.error(
+                "Couldn't get safe tx hash. Expected response performative "
+                f"{ContractApiMessage.Performative.STATE.value!r}, "  # type: ignore
+                f"received {response_msg.performative.value!r}: {response_msg}."
+            )
+            return None
+
+        # Extract the hash and check it has the correct length
+        tx_hash: Optional[str] = response_msg.state.body.get("tx_hash", None)
+
+        if tx_hash is None or len(tx_hash) != TX_HASH_LENGTH:
+            self.context.logger.error(
+                "Something went wrong while trying to get the safe transaction hash. "
+                f"Invalid hash {tx_hash!r} was returned."
+            )
+            return None
+
+        # Transaction to hex
+        tx_hash = tx_hash[2:]  # strip the 0x
+
+        safe_tx_hash = hash_payload_to_hex(
+            safe_tx_hash=tx_hash,
+            ether_value=value,
+            safe_tx_gas=SAFE_GAS,
+            to_address=to_address,
+            data=data,
+            operation=operation,
+        )
+
+        self.context.logger.info(f"Safe transaction hash is {safe_tx_hash}")
+
+        return safe_tx_hash
 
 class DecisionMakingBehaviour(
     LearningBaseBehaviour
@@ -658,6 +767,7 @@ class LearningRoundBehaviour(AbstractRoundBehaviour):
     abci_app_cls = LearningAbciApp  # type: ignore
     behaviours: Set[Type[BaseBehaviour]] = [  # type: ignore
         DataPullBehaviour,
+        NativeTransferBehaviour,
         DecisionMakingBehaviour,
         TxPreparationBehaviour,
     ]
