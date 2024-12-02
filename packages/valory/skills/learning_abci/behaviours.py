@@ -25,6 +25,8 @@ from pathlib import Path
 from tempfile import mkdtemp
 from typing import Dict, Generator, Optional, Set, Tuple, Type, cast
 
+from packages.valory.contracts.simple_contract.contract import TotalSupplyReader
+
 from packages.valory.contracts.erc20.contract import ERC20
 from packages.valory.contracts.gnosis_safe.contract import (
     GnosisSafeContract,
@@ -52,6 +54,7 @@ from packages.valory.skills.learning_abci.payloads import (
     DecisionMakingPayload,
     NativeTransferPayload,
     TxPreparationPayload,
+    TotalSupplyCheckPayload,
 )
 from packages.valory.skills.learning_abci.rounds import (
     DataPullRound,
@@ -61,6 +64,7 @@ from packages.valory.skills.learning_abci.rounds import (
     NativeTransferRound,
     SynchronizedData,
     TxPreparationRound,
+    TotalSupplyCheckRound,
 )
 from packages.valory.skills.transaction_settlement_abci.payload_tools import (
     hash_payload_to_hex,
@@ -280,6 +284,7 @@ class DataPullBehaviour(LearningBaseBehaviour):  # pylint: disable=too-many-ance
 
         return balance
 
+
 class NativeTransferBehaviour(LearningBaseBehaviour):
     """NativeTransferBehaviour"""
 
@@ -387,6 +392,68 @@ class NativeTransferBehaviour(LearningBaseBehaviour):
         self.context.logger.info(f"Safe transaction hash is {safe_tx_hash}")
 
         return safe_tx_hash
+
+
+
+
+class TotalSupplyCheckBehaviour(LearningBaseBehaviour):
+        """TotalSupplyCheckBehaviour"""
+
+        matching_round: Type[AbstractRound] = TotalSupplyCheckRound
+
+        def async_act(self) -> Generator:
+            """Check the total supply of the token."""
+            with self.context.benchmark_tool.measure(self.behaviour_id).local():
+                sender = self.context.agent_address
+
+                total_supply = yield from self.get_total_supply()
+
+                payload = TotalSupplyCheckPayload(sender=sender, total_supply=total_supply)
+
+            with self.context.benchmark_tool.measure(self.behaviour_id).consensus():
+                yield from self.send_a2a_transaction(payload)
+                yield from self.wait_until_round_end()
+
+            self.set_done()
+
+        def get_total_supply(self) -> Generator[None, None, Optional[float]]:
+            """Get the total supply of the token"""
+            self.context.logger.info(
+                f"Getting total supply for token at address {self.params.olas_token_address}"
+            )
+
+            # Use the contract api to interact with the token contract
+            response_msg = yield from self.get_contract_api_response(
+                performative=ContractApiMessage.Performative.GET_RAW_TRANSACTION,  # type: ignore
+                contract_address=self.params.olas_token_address,
+                contract_id=str(TotalSupplyReader.contract_id),
+                contract_callable="get_total_supply",
+                chain_id=GNOSIS_CHAIN_ID,
+            )
+
+            # Check that the response is what we expect
+            if response_msg.performative != ContractApiMessage.Performative.RAW_TRANSACTION:
+                self.context.logger.error(
+                    f"Error while retrieving the total supply: {response_msg}"
+                )
+                return None
+
+            total_supply = response_msg.raw_transaction.body.get("total_supply", None)
+
+            # Ensure that the total supply is not None
+            if total_supply is None:
+                self.context.logger.error(
+                    f"Error while retrieving the total supply: {response_msg}"
+                )
+                return None
+
+            total_supply = total_supply / 10**18  # from wei
+
+            self.context.logger.info(
+                f"Total supply of the token: {total_supply}"
+            )
+            return total_supply
+
 
 class DecisionMakingBehaviour(
     LearningBaseBehaviour
@@ -765,9 +832,10 @@ class LearningRoundBehaviour(AbstractRoundBehaviour):
 
     initial_behaviour_cls = DataPullBehaviour
     abci_app_cls = LearningAbciApp  # type: ignore
-    behaviours: Set[Type[BaseBehaviour]] = [  # type: ignore
+    behaviours: Set[Type[BaseBehaviour]] = {  # type: ignore
         DataPullBehaviour,
         NativeTransferBehaviour,
         DecisionMakingBehaviour,
         TxPreparationBehaviour,
-    ]
+        TotalSupplyCheckBehaviour, 
+    }

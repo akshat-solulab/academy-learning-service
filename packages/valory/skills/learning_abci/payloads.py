@@ -56,3 +56,10 @@ class NativeTransferPayload(BaseTxPayload):
 
     tx_submitter: Optional[str]
     tx_hash: Optional[str]
+
+
+@dataclass(frozen=True)
+class TotalSupplyCheckPayload(BaseTxPayload):
+    """Represent a transaction payload for the TxPreparationRound."""
+
+    total_supply: Optional[float]
