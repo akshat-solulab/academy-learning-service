@@ -59,6 +59,14 @@ class NativeTransferPayload(BaseTxPayload):
 
 
 @dataclass(frozen=True)
+class TokenDepositPayload(BaseTxPayload):
+    """Represent a transaction payload for token deposit."""
+
+    tx_submitter: Optional[str]
+    tx_hash: Optional[str]
+
+
+@dataclass(frozen=True)
 class TotalSupplyCheckPayload(BaseTxPayload):
     """Represent a transaction payload for the TxPreparationRound."""
 

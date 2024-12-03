@@ -40,6 +40,7 @@ from packages.valory.skills.learning_abci.payloads import (
     NativeTransferPayload,
     TotalSupplyCheckPayload,
     TxPreparationPayload,
+    TokenDepositPayload,
 )
 
 
@@ -119,6 +120,11 @@ class SynchronizedData(BaseSynchronizedData):
     def participant_to_total_supply_check_round(self) -> DeserializedCollection:
         """Get the participants to the total supply check round."""
         return self._get_deserialized("participant_to_total_supply_check_round")
+    
+    @property
+    def participant_to_deposit_round(self) -> DeserializedCollection:
+        """Get the participants to deposit round."""
+        return self._get_deserialized("participant_to_deposit_round")
 
 
 class TotalSupplyCheckRound(CollectSameUntilThresholdRound):
@@ -199,6 +205,18 @@ class NativeTransferRound(CollectSameUntilThresholdRound):
     # Event.ROUND_TIMEOUT  # this needs to be referenced for static checkers
 
 
+class TokenDepositRound(CollectSameUntilThresholdRound):
+    """TokenDepositRound"""
+
+    payload_class = TokenDepositPayload
+    synchronized_data_class = SynchronizedData
+    done_event = Event.DONE
+    no_majority_event = Event.NO_MAJORITY
+    collection_key = get_name(SynchronizedData.participant_to_deposit_round)
+    selection_key = (
+        get_name(SynchronizedData.tx_submitter),
+        get_name(SynchronizedData.most_voted_tx_hash),
+    )
 class TotalSupplyCheckRound(CollectSameUntilThresholdRound):
     """TotalSupplyCheckRound"""
 

@@ -55,6 +55,7 @@ from packages.valory.skills.learning_abci.payloads import (
     NativeTransferPayload,
     TxPreparationPayload,
     TotalSupplyCheckPayload,
+    TokenDepositPayload,
 )
 from packages.valory.skills.learning_abci.rounds import (
     DataPullRound,
@@ -65,6 +66,7 @@ from packages.valory.skills.learning_abci.rounds import (
     SynchronizedData,
     TxPreparationRound,
     TotalSupplyCheckRound,
+    TokenDepositRound,
 )
 from packages.valory.skills.transaction_settlement_abci.payload_tools import (
     hash_payload_to_hex,
@@ -819,6 +821,262 @@ class TxPreparationBehaviour(
         )
 
         self.context.logger.info(f"Safe transaction hash is {safe_tx_hash}")
+
+        return safe_tx_hash
+
+
+class TokenDepositBehaviour(LearningBaseBehaviour):
+    """TokenDepositBehaviour"""
+
+    matching_round: Type[AbstractRound] = TokenDepositRound
+
+    def async_act(self) -> Generator:
+        """Do the act, supporting asynchronous execution."""
+        self.context.logger.info("Entering TokenDepositBehaviour")
+
+        with self.context.benchmark_tool.measure(self.behaviour_id).local():
+            sender = self.context.agent_address
+            # Get timestamp to decide which transaction to make
+            now = int(self.get_sync_timestamp())
+            self.context.logger.info(f"Current timestamp: {now}")
+            last_number = int(str(now)[-1])
+            self.context.logger.info(
+                f"Last Number of timestamp in TokenDeposit Round: {last_number}"
+            )
+            # Decide which transaction to create based on timestamp
+            if last_number % 2 == 0:
+                self.context.logger.info(
+                    "Preparing deposit transaction based on even timestamp"
+                )
+                tx_hash = yield from self.get_deposit_tx_hash()
+            else:
+                self.context.logger.info(
+                    "Preparing multisend transaction based on odd timestamp"
+                )
+                tx_hash = yield from self.get_multisend_safe_tx_hash()
+
+            if tx_hash:
+                self.context.logger.info(
+                    f"Successfully generated transaction hash: {tx_hash}"
+                )
+            else:
+                self.context.logger.error("Failed to generate transaction hash")
+
+            payload = TokenDepositPayload(
+                sender=sender,
+                tx_submitter=self.auto_behaviour_id(),
+                tx_hash=tx_hash,
+            )
+
+        with self.context.benchmark_tool.measure(self.behaviour_id).consensus():
+            yield from self.send_a2a_transaction(payload)
+            yield from self.wait_until_round_end()
+
+        self.context.logger.info("TokenDepositBehaviour completed")
+        self.set_done()
+
+    def get_deposit_tx_hash(self) -> Generator[None, None, Optional[str]]:
+        """Get deposit transaction hash."""
+        self.context.logger.info(
+            f"Building deposit transaction for token at {self.params.olas_token_address}"
+        )
+
+        response_msg = yield from self.get_contract_api_response(
+            performative=ContractApiMessage.Performative.GET_RAW_TRANSACTION,
+            contract_address=self.params.olas_token_address,
+            contract_id=str(TotalSupplyReader.contract_id),
+            contract_callable="build_deposit_tx",
+            chain_id=GNOSIS_CHAIN_ID,
+        )
+
+        if response_msg.performative != ContractApiMessage.Performative.RAW_TRANSACTION:
+            self.context.logger.error(
+                f"Error building deposit tx: got performative {response_msg.performative} "
+                f"instead of {ContractApiMessage.Performative.RAW_TRANSACTION}"
+            )
+            return None
+
+        data = response_msg.raw_transaction.body.get("data")
+        if not data:
+            self.context.logger.error("No deposit tx data received in response")
+            return None
+
+        self.context.logger.info("Successfully built deposit transaction data")
+
+        # Build Safe transaction hash
+        self.context.logger.info("Building Safe transaction hash for deposit")
+        safe_tx_hash = yield from self._build_safe_tx_hash(
+            to_address=self.params.olas_token_address,
+            data=data,
+        )
+
+        if safe_tx_hash:
+            self.context.logger.info(
+                f"Successfully generated Safe transaction hash: {safe_tx_hash}"
+            )
+        else:
+            self.context.logger.error("Failed to generate Safe transaction hash")
+
+        return safe_tx_hash
+
+    def get_native_transfer_data(self) -> Dict:
+        """Get the native transaction data"""
+        data = {VALUE_KEY: 1, TO_ADDRESS_KEY: self.params.transfer_target_address}
+        self.context.logger.info(f"Native transfer data: {data}")
+        return data
+
+    def get_erc20_transfer_data(self) -> Generator[None, None, Optional[str]]:
+        """Get the ERC20 transaction data"""
+        self.context.logger.info("Preparing ERC20 transfer transaction")
+
+        response_msg = yield from self.get_contract_api_response(
+            performative=ContractApiMessage.Performative.GET_RAW_TRANSACTION,
+            contract_address=self.params.olas_token_address,
+            contract_id=str(ERC20.contract_id),
+            contract_callable="build_transfer_tx",
+            recipient=self.params.transfer_target_address,
+            amount=1,
+            chain_id=GNOSIS_CHAIN_ID,
+        )
+
+        if response_msg.performative != ContractApiMessage.Performative.RAW_TRANSACTION:
+            self.context.logger.error(f"Error preparing ERC20 transfer: {response_msg}")
+            return None
+
+        data_bytes: Optional[bytes] = response_msg.raw_transaction.body.get(
+            "data", None
+        )
+
+        if data_bytes is None:
+            self.context.logger.error(
+                f"No data in ERC20 transfer response: {response_msg}"
+            )
+            return None
+
+        data_hex = data_bytes.hex()
+        self.context.logger.info(f"ERC20 transfer data: {data_hex}")
+        return data_hex
+
+    def get_multisend_safe_tx_hash(self) -> Generator[None, None, Optional[str]]:
+        """Get a multisend transaction hash combining native and ERC20 transfers."""
+        self.context.logger.info("Building multisend transaction")
+
+        multi_send_txs = []
+
+        # Add native transfer to multisend
+        native_transfer_data = self.get_native_transfer_data()
+        multi_send_txs.append(
+            {
+                "operation": MultiSendOperation.CALL,
+                "to": self.params.transfer_target_address,
+                "value": native_transfer_data[VALUE_KEY],
+            }
+        )
+        self.context.logger.info("Added native transfer to multisend")
+
+        # Add ERC20 transfer to multisend
+        erc20_transfer_data_hex = yield from self.get_erc20_transfer_data()
+        if erc20_transfer_data_hex is None:
+            self.context.logger.error("Failed to get ERC20 transfer data")
+            return None
+
+        multi_send_txs.append(
+            {
+                "operation": MultiSendOperation.CALL,
+                "to": self.params.olas_token_address,
+                "value": ZERO_VALUE,
+                "data": bytes.fromhex(erc20_transfer_data_hex),
+            }
+        )
+        self.context.logger.info("Added ERC20 transfer to multisend")
+
+        # Build multisend transaction
+        contract_api_msg = yield from self.get_contract_api_response(
+            performative=ContractApiMessage.Performative.GET_RAW_TRANSACTION,
+            contract_address=self.params.multisend_address,
+            contract_id=str(MultiSendContract.contract_id),
+            contract_callable="get_tx_data",
+            multi_send_txs=multi_send_txs,
+            chain_id=GNOSIS_CHAIN_ID,
+        )
+
+        if (
+            contract_api_msg.performative
+            != ContractApiMessage.Performative.RAW_TRANSACTION
+        ):
+            self.context.logger.error(
+                f"Could not get Multisend tx data. Expected: {ContractApiMessage.Performative.RAW_TRANSACTION.value}, "
+                f"Got: {contract_api_msg.performative.value}"
+            )
+            return None
+
+        multisend_data = cast(str, contract_api_msg.raw_transaction.body["data"])[2:]
+        self.context.logger.info(f"Generated multisend data: {multisend_data}")
+
+        # Prepare final Safe transaction
+        safe_tx_hash = yield from self._build_safe_tx_hash(
+            to_address=self.params.multisend_address,
+            value=ZERO_VALUE,
+            data=bytes.fromhex(multisend_data),
+            operation=SafeOperation.DELEGATE_CALL.value,
+        )
+
+        if safe_tx_hash:
+            self.context.logger.info(f"Generated Safe transaction hash: {safe_tx_hash}")
+        else:
+            self.context.logger.error("Failed to generate Safe transaction hash")
+
+        return safe_tx_hash
+
+    def _build_safe_tx_hash(
+        self,
+        to_address: str,
+        value: int = ZERO_VALUE,
+        data: bytes = EMPTY_CALL_DATA,
+        operation: int = SafeOperation.CALL.value,
+    ) -> Generator[None, None, Optional[str]]:
+        """Prepares and returns the safe tx hash for the multisend tx."""
+
+        self.context.logger.info(
+            f"Preparing Safe transaction [Safe: {self.synchronized_data.safe_contract_address}]"
+        )
+
+        response_msg = yield from self.get_contract_api_response(
+            performative=ContractApiMessage.Performative.GET_STATE,
+            contract_address=self.synchronized_data.safe_contract_address,
+            contract_id=str(GnosisSafeContract.contract_id),
+            contract_callable="get_raw_safe_transaction_hash",
+            to_address=to_address,
+            value=value,
+            data=data,
+            safe_tx_gas=SAFE_GAS,
+            chain_id=GNOSIS_CHAIN_ID,
+            operation=operation,
+        )
+
+        if response_msg.performative != ContractApiMessage.Performative.STATE:
+            self.context.logger.error(
+                f"Could not get Safe tx hash. Expected: {ContractApiMessage.Performative.STATE.value}, "
+                f"Got: {response_msg.performative.value}"
+            )
+            return None
+
+        tx_hash: Optional[str] = response_msg.state.body.get("tx_hash", None)
+
+        if tx_hash is None or len(tx_hash) != TX_HASH_LENGTH:
+            self.context.logger.error(f"Invalid Safe tx hash: {tx_hash}")
+            return None
+
+        tx_hash = tx_hash[2:]  # strip the 0x
+
+        safe_tx_hash = hash_payload_to_hex(
+            safe_tx_hash=tx_hash,
+            ether_value=value,
+            safe_tx_gas=SAFE_GAS,
+            to_address=to_address,
+            data=data,
+            operation=operation,
+        )
 
         return safe_tx_hash
 
