@@ -48,3 +48,17 @@ class TotalSupplyReader(Contract):
         total_supply = getattr(contract_instance.functions, "totalSupply")  # noqa
         token_total_supply = total_supply().call()
         return dict(total_supply=token_total_supply)
+    
+    @classmethod
+    def build_transfer_tx(
+        cls,
+        ledger_api: LedgerApi,
+        contract_address: str,
+        recipient: str,
+        amount: int,
+    ) -> Dict[str, bytes]:
+        """Build an ERC20 transfer."""
+        contract_instance = cls.get_instance(ledger_api, contract_address)
+        checksumed_recipient = ledger_api.api.to_checksum_address(recipient)
+        data = contract_instance.encodeABI("transfer", args=(checksumed_recipient, amount))
+        return {"data": bytes.fromhex(data[2:])}

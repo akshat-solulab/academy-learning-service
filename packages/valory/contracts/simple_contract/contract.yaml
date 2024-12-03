@@ -8,7 +8,7 @@ aea_version: '>=1.0.0, <2.0.0'
 fingerprint:
   __init__.py: bafybeic5lamzwngtlre5afhne4hjwprbhelkcqqs5zr2qyl3474xgia6jq
   build/simple_contract.json: bafybeifbyzwztfydi7wjum2faupv7b2wyrnvtjihardsmwqkslkbexr4ni
-  contract.py: bafybeigg4n5mh3ka3rzpw5lqjocjwnsnmwjeuxfz3w4qdowdwn7236uctm
+  contract.py: bafybeiajl7uuo7igkcalhv3tgwdix4vbt2hxjc3c4hnmjebozoiva35lku
 fingerprint_ignore_patterns: []
 contracts: []
 class_name: TotalSupplyReader
