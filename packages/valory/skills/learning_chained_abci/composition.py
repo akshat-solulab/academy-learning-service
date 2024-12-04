@@ -23,6 +23,7 @@ import packages.valory.skills.learning_abci.rounds as LearningAbci
 import packages.valory.skills.registration_abci.rounds as RegistrationAbci
 import packages.valory.skills.reset_pause_abci.rounds as ResetAndPauseAbci
 import packages.valory.skills.transaction_settlement_abci.rounds as TxSettlementAbci
+import packages.valory.skills.ether_rate_abci.rounds as CoincapAbci
 from packages.valory.skills.abstract_round_abci.abci_app_chain import (
     AbciAppTransitionMapping,
     chain,
@@ -43,6 +44,7 @@ abci_app_transition_mapping: AbciAppTransitionMapping = {
     TxSettlementAbci.FailedRound: TxSettlementAbci.RandomnessTransactionSubmissionRound,
     ResetAndPauseAbci.FinishedResetAndPauseRound: LearningAbci.DataPullRound,
     ResetAndPauseAbci.FinishedResetAndPauseErrorRound: RegistrationAbci.RegistrationRound,
+    CoincapAbci.coincapRound: CoincapAbci.FinishedCoincapRound,
 }
 
 termination_config = BackgroundAppConfig(

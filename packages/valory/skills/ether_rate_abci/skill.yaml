@@ -1,33 +1,36 @@
-name: learning_chained_abci
+name: ether_rate_abci
 author: valory
 version: 0.1.0
 type: skill
-description: The chained abci for the learning skill.
+description: A learning skill.
 license: Apache-2.0
 aea_version: '>=1.0.0, <2.0.0'
 fingerprint:
-  __init__.py: bafybeihu5y5llhaefw32jodf2nc2x5tig7cfo2fallbodv6vodczunpbve
-  behaviours.py: bafybeifhutwdxdct7usaycoaodrudkl5zrtsgnaawwfhbxvp3fgjsp7o3a
-  composition.py: bafybeigevu4livbpgfdbiep4hxe6bcvlaf45fed2ypqmjadxgjyf2jzgb4
-  dialogues.py: bafybeiakqfqcpg7yrxt4bsyernhy5p77tci4qhmgqqjqi3ttx7zk6sklca
-  fsm_specification.yaml: bafybeibhguliurgppqgues6zhy3e3pioacgapilid7j26u4pmfsump5ape
-  handlers.py: bafybeicru4lanvektcppxpecul4zwjfuaxseopxtsxrfzmbfaz5qk4m67q
-  models.py: bafybeico4qysu652lznxwxfamsu43d7llstplca5eqcwnmwg66fxmzt4qe
+  __init__.py: bafybeiho3lkochqpmes4f235chq26oggmwnol3vjuvhosleoubbjirbwaq
+  behaviours.py: bafybeib3xiuguuzzsbdddx6hh7g6enlf6h7owxlf4ddmjquthodpw7xxsy
+  dialogues.py: bafybeifqjbumctlffx2xvpga2kcenezhe47qhksvgmaylyp5ypwqgfar5u
+  fsm_specification.yaml: bafybeigbbydxuqephdpatb3fp3sxnvr77bfvvo5hwjimxfpgyl32wupe64
+  handlers.py: bafybeigjadr4thz6hfpfx5abezbwnqhbxmachf4efasrn4z2vqhsqgnyvi
+  models.py: bafybeibkssi7x3dkenx7vwuuzdt4plmpfyf5anefesd2uejyvznhfo7i6u
+  payloads.py: bafybeiavrzwyx3j5ebrwjlwoeynommlj34gqe3quj5ich2wmvporvux3c4
+  rounds.py: bafybeiebxe4xos6efwia4eoj37fcjenwkfchmxo7ywikcrpnpb3jwjrtpq
 fingerprint_ignore_patterns: []
 connections: []
-contracts: []
-protocols: []
+contracts:
+- valory/gnosis_safe:0.1.0:bafybeib375xmvcplw7ageic2np3hq4yqeijrvd5kl7rrdnyvswats6ngmm
+- valory/erc20:0.1.0:bafybeibyhuxozkkvsymqz45vxixr3w3bs4vsvxg2nsx5jlyi3f3hhn7ezi
+- valory/multisend:0.1.0:bafybeig5byt5urg2d2bsecufxe5ql7f4mezg3mekfleeh32nmuusx66p4y
+- valory/simple_contract:0.1.0:bafybeieikmvwyytviangu3mu7t3373lntzwsh3np2tnoh6wlazhjtfz6xq
+protocols:
+- valory/contract_api:1.0.0:bafybeidgu7o5llh26xp3u3ebq3yluull5lupiyeu6iooi2xyymdrgnzq5i
+- valory/ledger_api:1.0.0:bafybeihdk6psr4guxmbcrc26jr2cbgzpd5aljkqvpwo64bvaz7tdti2oni
 skills:
 - valory/abstract_round_abci:0.1.0:bafybeiajjzuh6vf23crp55humonknirvv2f4s3dmdlfzch6tc5ow52pcgm
-- valory/registration_abci:0.1.0:bafybeiffipsowrqrkhjoexem7ern5ob4fabgif7wa6gtlszcoaop2e3oey
-- valory/reset_pause_abci:0.1.0:bafybeif4lgvbzsmzljesxbphycdv52ka7qnihyjrjpfaseclxadcmm6yiq
-- valory/termination_abci:0.1.0:bafybeiekkpo5qef5zaeagm3si6v45qxcojvtjqe4a5ceccvk4q7k3xi3bi
-- valory/learning_abci:0.1.0:bafybeiadrtdgnckrke34yhdir5lsgg7vlmlja3xjiwasjxshgv3pmsp4wi
 - valory/transaction_settlement_abci:0.1.0:bafybeielv6eivt2z6nforq43xewl2vmpfwpdu2s2vfogobziljnwsclmlm
 behaviours:
   main:
     args: {}
-    class_name: LearningChainedConsensusBehaviour
+    class_name: LearningRoundBehaviour
 handlers:
   abci:
     args: {}
@@ -61,22 +64,22 @@ models:
   contract_api_dialogues:
     args: {}
     class_name: ContractApiDialogues
+  http_dialogues:
+    args: {}
+    class_name: HttpDialogues
   ipfs_dialogues:
     args: {}
     class_name: IpfsDialogues
   ledger_api_dialogues:
     args: {}
     class_name: LedgerApiDialogues
-  http_dialogues:
-    args: {}
-    class_name: HttpDialogues
   params:
     args:
       cleanup_history_depth: 1
       cleanup_history_depth_current: null
       drand_public_key: 868f005eb8e6e4ca0a47c8a77ceaa5309a47978a7c71bc5cce96366b5d7a569937c529eeda66c7293784a9402801af31
+      finalize_timeout: 60.0
       genesis_config:
-        genesis_time: '2022-09-26T00:00:00.000000000Z'
         chain_id: chain-c4daS1
         consensus_params:
           block:
@@ -84,26 +87,25 @@ models:
             max_gas: '-1'
             time_iota_ms: '1000'
           evidence:
-            max_age_num_blocks: '100000'
             max_age_duration: '172800000000000'
+            max_age_num_blocks: '100000'
             max_bytes: '1048576'
           validator:
             pub_key_types:
             - ed25519
           version: {}
+        genesis_time: '2022-05-20T16:00:21.735122717Z'
         voting_power: '10'
+      history_check_timeout: 1205
+      ipfs_domain_name: null
+      keeper_allowed_retries: 3
       keeper_timeout: 30.0
       max_attempts: 10
       max_healthcheck: 120
-      multisend_address: '0xA238CBeb142c10Ef7Ad8442C6D1f9E89e07e7761'
-      termination_sleep: 900
-      termination_from_block: 0
-      init_fallback_gas: 0
-      keeper_allowed_retries: 3
-      reset_pause_duration: 10
       on_chain_service_id: null
       request_retry_delay: 1.0
       request_timeout: 10.0
+      reset_pause_duration: 10
       reset_tendermint_after: 2
       retry_attempts: 400
       retry_timeout: 3
@@ -111,9 +113,10 @@ models:
       service_id: learning
       service_registry_address: null
       setup:
-        all_participants: []
-        safe_contract_address: '0x0000000000000000000000000000000000000000'
+        all_participants:
+        - '0x0000000000000000000000000000000000000000'
         consensus_threshold: null
+        safe_contract_address: '0x0000000000000000000000000000000000000000'
       share_tm_config_on_startup: false
       sleep_time: 1
       tendermint_check_sleep_delay: 3
@@ -121,24 +124,14 @@ models:
       tendermint_max_retries: 5
       tendermint_p2p_url: localhost:26656
       tendermint_url: http://localhost:26657
-      use_termination: false
-      validate_timeout: 1205
-      finalize_timeout: 60.0
-      history_check_timeout: 1205
-      use_slashing: false
-      slash_cooldown_hours: 3
-      slash_threshold_amount: 10000000000000000
-      light_slash_unit_amount: 5000000000000000
-      serious_slash_unit_amount: 8000000000000000
-      multisend_batch_size: 50
       tx_timeout: 10.0
-      ipfs_address: https://gateway.autonolas.tech/ipfs/
+      validate_timeout: 1205
       service_endpoint_base: https://learning.autonolas.tech/
       coingecko_price_template: https://api.coingecko.com/api/v3/simple/price?ids=autonolas&vs_currencies=usd&x_cg_demo_api_key={api_key}
       coingecko_api_key: null
-      default_chain_id: gnosis
       transfer_target_address: '0x0000000000000000000000000000000000000000'
       olas_token_address: '0xcE11e14225575945b8E6Dc0D4F2dD4C570f79d9f'
+      multisend_address: '0xA238CBeb142c10Ef7Ad8442C6D1f9E89e07e7761'
     class_name: Params
   coingecko_specs:
     args:
@@ -155,17 +148,6 @@ models:
       retries: 5
       url: https://api.coingecko.com/api/v3/simple/price
     class_name: CoingeckoSpecs
-  randomness_api:
-    args:
-      api_id: cloudflare
-      headers: {}
-      method: GET
-      parameters: {}
-      response_key: null
-      response_type: dict
-      retries: 5
-      url: https://drand.cloudflare.com/public/latest
-    class_name: RandomnessApi
   requests:
     args: {}
     class_name: Requests
@@ -178,6 +160,6 @@ models:
   tendermint_dialogues:
     args: {}
     class_name: TendermintDialogues
-dependencies:
-  valory/ether_rate_abci: 0.1.0
-is_abstract: false
+dependencies: {}
+is_abstract: true
+customs: []
