@@ -8,9 +8,9 @@ aea_version: '>=1.0.0, <2.0.0'
 fingerprint:
   __init__.py: bafybeihu5y5llhaefw32jodf2nc2x5tig7cfo2fallbodv6vodczunpbve
   behaviours.py: bafybeifhutwdxdct7usaycoaodrudkl5zrtsgnaawwfhbxvp3fgjsp7o3a
-  composition.py: bafybeigevu4livbpgfdbiep4hxe6bcvlaf45fed2ypqmjadxgjyf2jzgb4
+  composition.py: bafybeiexnoulfssygjscuzjcrwkalbo3dd5qy3dkpyfmvhjkvi6dn5phfu
   dialogues.py: bafybeiakqfqcpg7yrxt4bsyernhy5p77tci4qhmgqqjqi3ttx7zk6sklca
-  fsm_specification.yaml: bafybeibhguliurgppqgues6zhy3e3pioacgapilid7j26u4pmfsump5ape
+  fsm_specification.yaml: bafybeifhiu735qamkt4kysa3ysd6isbzbwi4krs6o2djsxyuqo5pd3nd6q
   handlers.py: bafybeicru4lanvektcppxpecul4zwjfuaxseopxtsxrfzmbfaz5qk4m67q
   models.py: bafybeico4qysu652lznxwxfamsu43d7llstplca5eqcwnmwg66fxmzt4qe
 fingerprint_ignore_patterns: []
@@ -22,8 +22,9 @@ skills:
 - valory/registration_abci:0.1.0:bafybeiffipsowrqrkhjoexem7ern5ob4fabgif7wa6gtlszcoaop2e3oey
 - valory/reset_pause_abci:0.1.0:bafybeif4lgvbzsmzljesxbphycdv52ka7qnihyjrjpfaseclxadcmm6yiq
 - valory/termination_abci:0.1.0:bafybeiekkpo5qef5zaeagm3si6v45qxcojvtjqe4a5ceccvk4q7k3xi3bi
-- valory/learning_abci:0.1.0:bafybeiadrtdgnckrke34yhdir5lsgg7vlmlja3xjiwasjxshgv3pmsp4wi
+- valory/learning_abci:0.1.0:bafybeic7smyfxlanubsn7oj4u6z7mdvpkwigx5w72gypjis6tzf4zzwkhi
 - valory/transaction_settlement_abci:0.1.0:bafybeielv6eivt2z6nforq43xewl2vmpfwpdu2s2vfogobziljnwsclmlm
+- valory/ether_rate_abci:0.1.0:bafybeigjevkltluisly2uv7cpx34ivgcylvu2y75tq7vrpd2f6fycl5uhe
 behaviours:
   main:
     args: {}
@@ -178,6 +179,5 @@ models:
   tendermint_dialogues:
     args: {}
     class_name: TendermintDialogues
-dependencies:
-  valory/ether_rate_abci: 0.1.0
+dependencies: {}
 is_abstract: false

@@ -7,14 +7,14 @@ alphabet_in:
 default_start_state: coincapRound
 final_states:
 - FinishedCoincapRound
-label: LearningAbciApp
+label: CoincapAbciApp
 start_states:
 - coincapRound
 states:
 - coincapRound
 - FinishedCoincapRound
 transition_func:
-    (DataPullRound, DONE): FinishedCoincapRound
-    (DataPullRound, NO_MAJORITY): coincapRound
-    (DataPullRound, ROUND_TIMEOUT): coincapRound
+    (coincapRound, DONE): FinishedCoincapRound
+    (coincapRound, NO_MAJORITY): coincapRound
+    (coincapRound, ROUND_TIMEOUT): coincapRound
   

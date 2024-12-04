@@ -394,65 +394,61 @@ class NativeTransferBehaviour(LearningBaseBehaviour):
         return safe_tx_hash
 
 
-
-
 class TotalSupplyCheckBehaviour(LearningBaseBehaviour):
-        """TotalSupplyCheckBehaviour"""
+    """TotalSupplyCheckBehaviour"""
 
-        matching_round: Type[AbstractRound] = TotalSupplyCheckRound
+    matching_round: Type[AbstractRound] = TotalSupplyCheckRound
 
-        def async_act(self) -> Generator:
-            """Check the total supply of the token."""
-            with self.context.benchmark_tool.measure(self.behaviour_id).local():
-                sender = self.context.agent_address
+    def async_act(self) -> Generator:
+        """Check the total supply of the token."""
+        with self.context.benchmark_tool.measure(self.behaviour_id).local():
+            sender = self.context.agent_address
 
-                total_supply = yield from self.get_total_supply()
+            total_supply = yield from self.get_total_supply()
 
-                payload = TotalSupplyCheckPayload(sender=sender, total_supply=total_supply)
+            payload = TotalSupplyCheckPayload(sender=sender, total_supply=total_supply)
 
-            with self.context.benchmark_tool.measure(self.behaviour_id).consensus():
-                yield from self.send_a2a_transaction(payload)
-                yield from self.wait_until_round_end()
+        with self.context.benchmark_tool.measure(self.behaviour_id).consensus():
+            yield from self.send_a2a_transaction(payload)
+            yield from self.wait_until_round_end()
 
-            self.set_done()
+        self.set_done()
 
-        def get_total_supply(self) -> Generator[None, None, Optional[float]]:
-            """Get the total supply of the token"""
-            self.context.logger.info(
-                f"Getting total supply for token at address {self.params.olas_token_address}"
+    def get_total_supply(self) -> Generator[None, None, Optional[float]]:
+        """Get the total supply of the token"""
+        self.context.logger.info(
+            f"Getting total supply for token at address {self.params.olas_token_address}"
+        )
+
+        # Use the contract api to interact with the token contract
+        response_msg = yield from self.get_contract_api_response(
+            performative=ContractApiMessage.Performative.GET_RAW_TRANSACTION,  # type: ignore
+            contract_address=self.params.olas_token_address,
+            contract_id=str(TotalSupplyReader.contract_id),
+            contract_callable="get_total_supply",
+            chain_id=GNOSIS_CHAIN_ID,
+        )
+
+        # Check that the response is what we expect
+        if response_msg.performative != ContractApiMessage.Performative.RAW_TRANSACTION:
+            self.context.logger.error(
+                f"Error while retrieving the total supply: {response_msg}"
             )
+            return None
 
-            # Use the contract api to interact with the token contract
-            response_msg = yield from self.get_contract_api_response(
-                performative=ContractApiMessage.Performative.GET_RAW_TRANSACTION,  # type: ignore
-                contract_address=self.params.olas_token_address,
-                contract_id=str(TotalSupplyReader.contract_id),
-                contract_callable="get_total_supply",
-                chain_id=GNOSIS_CHAIN_ID,
+        total_supply = response_msg.raw_transaction.body.get("total_supply", None)
+
+        # Ensure that the total supply is not None
+        if total_supply is None:
+            self.context.logger.error(
+                f"Error while retrieving the total supply: {response_msg}"
             )
+            return None
 
-            # Check that the response is what we expect
-            if response_msg.performative != ContractApiMessage.Performative.RAW_TRANSACTION:
-                self.context.logger.error(
-                    f"Error while retrieving the total supply: {response_msg}"
-                )
-                return None
+        total_supply = total_supply / 10**18  # from wei
 
-            total_supply = response_msg.raw_transaction.body.get("total_supply", None)
-
-            # Ensure that the total supply is not None
-            if total_supply is None:
-                self.context.logger.error(
-                    f"Error while retrieving the total supply: {response_msg}"
-                )
-                return None
-
-            total_supply = total_supply / 10**18  # from wei
-
-            self.context.logger.info(
-                f"Total supply of the token: {total_supply}"
-            )
-            return total_supply
+        self.context.logger.info(f"Total supply of the token: {total_supply}")
+        return total_supply
 
 
 class DecisionMakingBehaviour(
@@ -837,5 +833,5 @@ class LearningRoundBehaviour(AbstractRoundBehaviour):
         NativeTransferBehaviour,
         DecisionMakingBehaviour,
         TxPreparationBehaviour,
-        TotalSupplyCheckBehaviour, 
+        TotalSupplyCheckBehaviour,
     }

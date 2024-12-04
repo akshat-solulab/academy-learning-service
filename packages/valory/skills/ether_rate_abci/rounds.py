@@ -158,7 +158,7 @@ class FinishedCoincapRound(DegenerateRound):
     """FinishedCoincapRound"""
 
 
-class CoincapAbci(AbciApp[Event]):
+class CoincapAbciApp(AbciApp[Event]):
     """CoincapAbci"""
 
     initial_round_cls: AppState = coincapRound
@@ -166,7 +166,6 @@ class CoincapAbci(AbciApp[Event]):
         coincapRound,
     }
     transition_function: AbciAppTransitionFunction = {
-        
         coincapRound: {
             Event.NO_MAJORITY: coincapRound,
             Event.ROUND_TIMEOUT: coincapRound,
@@ -175,8 +174,6 @@ class CoincapAbci(AbciApp[Event]):
     }
     final_states: Set[AppState] = {
         FinishedCoincapRound,
-        # FinishedDecisionMakingRound,
-        # FinishedTxPreparationRound,
     }
     event_to_timeout: EventToTimeout = {}
     cross_period_persisted_keys: FrozenSet[str] = frozenset()

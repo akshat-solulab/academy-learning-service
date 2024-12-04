@@ -35,7 +35,6 @@ from packages.valory.skills.termination_abci.rounds import (
     TerminationAbciApp,
 )
 
-
 abci_app_transition_mapping: AbciAppTransitionMapping = {
     RegistrationAbci.FinishedRegistrationRound: LearningAbci.DataPullRound,
     LearningAbci.FinishedDecisionMakingRound: ResetAndPauseAbci.ResetAndPauseRound,
@@ -59,6 +58,7 @@ LearningChainedSkillAbciApp = chain(
         LearningAbci.LearningAbciApp,
         TxSettlementAbci.TransactionSubmissionAbciApp,
         ResetAndPauseAbci.ResetPauseAbciApp,
+        CoincapAbci.CoincapAbciApp
     ),
     abci_app_transition_mapping,
 ).add_background_app(termination_config)
