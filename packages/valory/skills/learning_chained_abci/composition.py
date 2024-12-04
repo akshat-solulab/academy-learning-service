@@ -42,8 +42,8 @@ abci_app_transition_mapping: AbciAppTransitionMapping = {
     TxSettlementAbci.FinishedTransactionSubmissionRound: ResetAndPauseAbci.ResetAndPauseRound,
     TxSettlementAbci.FailedRound: TxSettlementAbci.RandomnessTransactionSubmissionRound,
     ResetAndPauseAbci.FinishedResetAndPauseRound: LearningAbci.DataPullRound,
-    ResetAndPauseAbci.FinishedResetAndPauseErrorRound: RegistrationAbci.RegistrationRound,
-    CoincapAbci.coincapRound: CoincapAbci.FinishedCoincapRound,
+    ResetAndPauseAbci.FinishedResetAndPauseErrorRound: CoincapAbci.coincapRound,
+    CoincapAbci.FinishedCoincapRound: RegistrationAbci.RegistrationRound,
 }
 
 termination_config = BackgroundAppConfig(
@@ -58,7 +58,7 @@ LearningChainedSkillAbciApp = chain(
         LearningAbci.LearningAbciApp,
         TxSettlementAbci.TransactionSubmissionAbciApp,
         ResetAndPauseAbci.ResetPauseAbciApp,
-        CoincapAbci.CoincapAbciApp
+        CoincapAbci.CoincapAbciApp,
     ),
     abci_app_transition_mapping,
 ).add_background_app(termination_config)
