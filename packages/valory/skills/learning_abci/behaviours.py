@@ -208,20 +208,37 @@ class DataPullBehaviour(LearningBaseBehaviour):  # pylint: disable=too-many-ance
 
     def get_bet_details(self, bet_id: int) -> Generator[None, None, Optional[Dict]]:
         """Get the details of a bet from the BettingContract."""
+        self.context.logger.info(
+            f"Getting bet details for bet ID {bet_id} from contract {self.params.betchain_contract_address}"
+        )
 
-        contract_api_response = yield from self.get_contract_api_response(
+        # Use the contract api to interact with the BettingContract
+        response_msg = yield from self.get_contract_api_response(
             performative=ContractApiMessage.Performative.GET_STATE,
             contract_address=self.params.betchain_contract_address,
             contract_id=str(BettingContract.contract_id),
             contract_callable="get_bet_details",
             bet_id=bet_id,
+            chain_id=GNOSIS_CHAIN_ID,
         )
 
-        if contract_api_response.performative != ContractApiMessage.Performative.STATE:
-            self.context.logger.error(f"Error fetching bet details for bet ID {bet_id}")
+        # Check that the response is what we expect
+        if response_msg.performative != ContractApiMessage.Performative.STATE:
+            self.context.logger.error(
+                f"Error while retrieving bet details for bet ID {bet_id}: {response_msg}"
+            )
             return None
 
-        bet_details = cast(Dict, contract_api_response.state.body["data"])
+        bet_details = response_msg.state.body.get("data", None)
+
+        # Ensure that the bet details are not None
+        if bet_details is None:
+            self.context.logger.error(
+                f"Error while retrieving bet details for bet ID {bet_id}: {response_msg}"
+            )
+            return None
+
+        self.context.logger.info(f"Bet details for bet ID {bet_id}: {bet_details}")
         return bet_details
 
 
