@@ -127,36 +127,70 @@ class DataPullBehaviour(LearningBaseBehaviour):  # pylint: disable=too-many-ance
 
         with self.context.benchmark_tool.measure(self.behaviour_id).local():
             sender = self.context.agent_address
-
-            # Get the first pending bet
-            first_pending_bet = 1
-
-            # Get the bet details
-            bet_details = yield from self.get_bet_details(first_pending_bet)
-            if bet_details is None:
-                self.context.logger.error("Failed to get bet details.")
+            bet_ipfs_hash = None  # Initialize hash variable
+            
+            # Get total and resolved bets
+            total_bets = yield from self.get_total_bets()
+            if total_bets is None:
+                self.context.logger.error("Failed to get total bets.")
             else:
-                self.context.logger.info(f"Bet details: {bet_details}")
+                self.context.logger.info(f"Total bets: {total_bets}")
+
+            resolved_bets = yield from self.get_resolved_bets()
+            if resolved_bets is None:
+                self.context.logger.error("Failed to get resolved bets.")
+            else:
+                self.context.logger.info(f"Resolved bets: {resolved_bets}")
+
+            # Calculate the first pending bet using total and resolved bets
+            first_pending_bet = None
+            if total_bets is not None and resolved_bets is not None:
+                if resolved_bets < total_bets:
+                    first_pending_bet = resolved_bets + 1
+                    self.context.logger.info(f"First pending bet: {first_pending_bet}")
+                    
+                    # Only get bet details if we have a valid pending bet
+                    bet_details = yield from self.get_bet_details(first_pending_bet)
+                    if bet_details is not None:
+                        # Create metadata with bet details
+                        metadata = {
+                            "timestamp": self.get_sync_timestamp(),
+                            "bet_details": bet_details,
+                        }
+                        
+                        # Save metadata to temporary file
+                        with open(self.metadata_filepath, "w", encoding="utf-8") as f:
+                            json.dump(metadata, f)
+
+                        # Store file in IPFS and get hash
+                        bet_ipfs_hash = yield from self.store_to_ipfs(
+                            filename=self.metadata_filepath,
+                            filetype=SupportedFiletype.JSON,
+                        )
+                        if bet_ipfs_hash:
+                            self.context.logger.info(f"Stored bet details to IPFS with hash: {bet_ipfs_hash}")
+                        else:
+                            self.context.logger.error("Failed to store bet details to IPFS")
 
             # Get the number of token holders
             token_holders = yield from self.get_token_holders()
-            arbitrum_holders = token_holders["arbitrum"]
-            base_holders = token_holders["base"]
+            arbitrum_holders = token_holders.get("arbitrum", 0)
+            base_holders = token_holders.get("base", 0)
 
-            if arbitrum_holders and base_holders:
-                # Prepare the payload to be shared with other agents
-                payload = DataPullPayload(
-                    sender=sender,
-                    arbitrum_holders=arbitrum_holders,
-                    base_holders=base_holders,
-                )
+            # Prepare the payload to be shared with other agents
+            payload = DataPullPayload(
+                sender=sender,
+                arbitrum_holders=arbitrum_holders,
+                base_holders=base_holders,
+                bet_ipfs_hash=bet_ipfs_hash,
+            )
 
-                # Send the payload to all agents and mark the behaviour as done
-                with self.context.benchmark_tool.measure(self.behaviour_id).consensus():
-                    yield from self.send_a2a_transaction(payload)
-                    yield from self.wait_until_round_end()
+            # Send the payload to all agents and mark the behaviour as done
+            with self.context.benchmark_tool.measure(self.behaviour_id).consensus():
+                yield from self.send_a2a_transaction(payload)
+                yield from self.wait_until_round_end()
 
-                self.set_done()
+            self.set_done()
 
     def get_token_holders(self) -> Generator[None, None, Optional[Dict[str, int]]]:
         """Get the number of token holders from Blockscout for both Arbitrum and Base"""
@@ -188,23 +222,6 @@ class DataPullBehaviour(LearningBaseBehaviour):  # pylint: disable=too-many-ance
             holders[network] = int(api_data["holders"])
 
         return holders
-
-    def get_first_pending_bet(self) -> Generator[None, None, Optional[int]]:
-        """Get the first pending bet from the BettingContract."""
-
-        contract_api_response = yield from self.get_contract_api_response(
-            performative=ContractApiMessage.Performative.GET_STATE,
-            contract_address=self.params.betchain_contract_address,
-            contract_id=str(BettingContract.contract_id),
-            contract_callable="get_first_pending_bet",
-        )
-
-        if contract_api_response.performative != ContractApiMessage.Performative.STATE:
-            self.context.logger.error("Error fetching the first pending bet")
-            return None
-
-        first_pending_bet = cast(int, contract_api_response.state.body["data"])
-        return first_pending_bet
 
     def get_bet_details(self, bet_id: int) -> Generator[None, None, Optional[Dict]]:
         """Get the details of a bet from the BettingContract."""
@@ -240,6 +257,74 @@ class DataPullBehaviour(LearningBaseBehaviour):  # pylint: disable=too-many-ance
 
         self.context.logger.info(f"Bet details for bet ID {bet_id}: {bet_details}")
         return bet_details
+
+    def get_total_bets(self) -> Generator[None, None, Optional[int]]:
+        """Get the total number of bets from the BettingContract."""
+        self.context.logger.info(
+            f"Getting total bets from contract {self.params.betchain_contract_address}"
+        )
+
+        # Use the contract api to interact with the BettingContract
+        response_msg = yield from self.get_contract_api_response(
+            performative=ContractApiMessage.Performative.GET_STATE,
+            contract_address=self.params.betchain_contract_address,
+            contract_id=str(BettingContract.contract_id),
+            contract_callable="get_total_bets",
+            chain_id=GNOSIS_CHAIN_ID,
+        )
+
+        # Check that the response is what we expect
+        if response_msg.performative != ContractApiMessage.Performative.STATE:
+            self.context.logger.error(
+                f"Error while retrieving total bets: {response_msg}"
+            )
+            return None
+
+        total_bets = response_msg.state.body.get("data", None)
+
+        # Ensure that the total bets is not None
+        if total_bets is None:
+            self.context.logger.error(
+                f"Error while retrieving total bets: {response_msg}"
+            )
+            return None
+
+        self.context.logger.info(f"Total bets: {total_bets}")
+        return total_bets
+
+    def get_resolved_bets(self) -> Generator[None, None, Optional[int]]:
+        """Get the number of resolved bets from the BettingContract."""
+        self.context.logger.info(
+            f"Getting resolved bets from contract {self.params.betchain_contract_address}"
+        )
+
+        # Use the contract api to interact with the BettingContract  
+        response_msg = yield from self.get_contract_api_response(
+            performative=ContractApiMessage.Performative.GET_STATE,
+            contract_address=self.params.betchain_contract_address,
+            contract_id=str(BettingContract.contract_id),
+            contract_callable="get_resolved_bets", 
+            chain_id=GNOSIS_CHAIN_ID,
+        )
+
+        # Check that the response is what we expect
+        if response_msg.performative != ContractApiMessage.Performative.STATE:
+            self.context.logger.error(
+                f"Error while retrieving resolved bets: {response_msg}"
+            )
+            return None
+
+        resolved_bets = response_msg.state.body.get("data", None)
+
+        # Ensure that the resolved bets is not None
+        if resolved_bets is None:
+            self.context.logger.error(
+                f"Error while retrieving resolved bets: {response_msg}"
+            )
+            return None
+
+        self.context.logger.info(f"Resolved bets: {resolved_bets}")
+        return resolved_bets
 
 
 class DecisionMakingBehaviour(

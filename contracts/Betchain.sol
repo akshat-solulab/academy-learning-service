@@ -9,6 +9,10 @@ contract BetChain is ERC721, Ownable {
     using Counters for Counters.Counter;
     Counters.Counter private _tokenIds;
 
+    // Add public variables to track bets
+    uint256 public totalBets;
+    uint256 public resolvedBets;
+
     struct Bet {
         address initiator;
         uint8 choice;
@@ -19,7 +23,7 @@ contract BetChain is ERC721, Ownable {
 
     mapping(uint => Bet) public bets;
     Counters.Counter private _betIds;
-    address public botAccount;
+    mapping(address => bool) public botAccounts;
     mapping(uint256 => string) private _tokenURIs;
     mapping(uint256 => bool) private _tokenExists;
 
@@ -33,14 +37,18 @@ contract BetChain is ERC721, Ownable {
     event WinningsDistributed(uint betId, address winner);
 
     constructor(
-        address _botAccount
+        address[4] memory _botAccounts
     ) ERC721("BettingToken", "BET") Ownable(msg.sender) {
-        botAccount = _botAccount;
+        for (uint i = 0; i < _botAccounts.length; i++) {
+            botAccounts[_botAccounts[i]] = true;
+        }
+        totalBets = 0;
+        resolvedBets = 0;
     }
 
     modifier onlyBot() {
         require(
-            msg.sender == botAccount,
+            botAccounts[msg.sender],
             "Only bot account can call this function"
         );
         _;
@@ -61,6 +69,7 @@ contract BetChain is ERC721, Ownable {
             result: 0
         });
 
+        totalBets++; // Increment total bets
         emit BetCreated(betId, msg.sender, choice, msg.value);
     }
 
@@ -75,11 +84,11 @@ contract BetChain is ERC721, Ownable {
 
         bet.resolved = true;
         bet.result = result;
+        resolvedBets++; // Increment resolved bets
 
         emit BetResolved(_betId, result);
 
         if (bet.result == 1) {
-            // if won
             distributeWinnings(_betId, ipfsHash);
         }
     }
@@ -126,14 +135,5 @@ contract BetChain is ERC721, Ownable {
             "ERC721Metadata: URI query for nonexistent token"
         );
         return _tokenURIs[tokenId];
-    }
-
-    function getFirstPendingBet() external view onlyBot returns (uint) {
-        for (uint i = 1; i <= _betIds.current(); i++) {
-            if (!bets[i].resolved) {
-                return i;
-            }
-        }
-        return 0;
     }
 }

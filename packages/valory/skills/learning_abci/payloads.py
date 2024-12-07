@@ -31,6 +31,7 @@ class DataPullPayload(BaseTxPayload):
 
     arbitrum_holders: Optional[int]
     base_holders: Optional[int]
+    ipfs_hash: Optional[str]
 
 
 @dataclass(frozen=True)
