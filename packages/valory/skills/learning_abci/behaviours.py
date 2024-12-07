@@ -23,7 +23,7 @@ import json
 from abc import ABC
 from pathlib import Path
 from tempfile import mkdtemp
-from typing import Dict, Generator, Optional, Set, Type, cast
+from typing import Dict, Generator, Optional, Set, Tuple, Type, cast
 
 from packages.valory.contracts.erc20.contract import ERC20
 from packages.valory.contracts.gnosis_safe.contract import (
@@ -343,14 +343,30 @@ class DecisionMakingBehaviour(
 
     def async_act(self) -> Generator:
         """Do the act, supporting asynchronous execution."""
-
         with self.context.benchmark_tool.measure(self.behaviour_id).local():
             sender = self.context.agent_address
-
-            # Make a decision: either transact or not
-            event = yield from self.get_next_event()
-
-            payload = DecisionMakingPayload(sender=sender, event=event)
+            
+            # Get bet details from IPFS
+            bet_details = yield from self.get_bet_details_from_ipfs()
+            if bet_details is None:
+                # Handle error case
+                payload = DecisionMakingPayload(
+                    sender=sender,
+                    event=Event.ERROR.value,
+                    result="lose",  # Default to lose on error
+                    prize_amount=0
+                )
+            else:
+                # Calculate result and prize
+                result, prize_amount = self.determine_winner_and_prize(bet_details)
+                
+                # Create proper payload object
+                payload = DecisionMakingPayload(
+                    sender=sender,
+                    event=Event.TRANSACT.value if prize_amount > 0 else Event.DONE.value,
+                    result=result,  # Using result instead of winner
+                    prize_amount=str(prize_amount)  # Convert to string for payload
+                )
 
         with self.context.benchmark_tool.measure(self.behaviour_id).consensus():
             yield from self.send_a2a_transaction(payload)
@@ -358,86 +374,55 @@ class DecisionMakingBehaviour(
 
         self.set_done()
 
-    def get_next_event(self) -> Generator[None, None, str]:
-        """Get the next event: decide whether ot transact or not based on some data."""
-
-        # This method showcases how to make decisions based on conditions.
-        # This is just a dummy implementation.
-
-        # Get the latest block number from the chain
-        block_number = yield from self.get_block_number()
-
-        # Get the balance we calculated in the previous round
-        native_balance = self.synchronized_data.native_balance
-
-        # We stored the price using two approaches: synchronized_data and IPFS
-        # Similarly, we retrieve using the corresponding ways
-        token_price = self.synchronized_data.price
-        token_price = yield from self.get_price_from_ipfs()
-
-        # If we fail to get the block number, we send the ERROR event
-        if not block_number:
-            self.context.logger.info("Block number is None. Sending the ERROR event...")
-            return Event.ERROR.value
-
-        # If we fail to get the token price, we send the ERROR event
-        if not token_price:
-            self.context.logger.info("Token price is None. Sending the ERROR event...")
-            return Event.ERROR.value
-
-        # If we fail to get the token balance, we send the ERROR event
-        if not native_balance:
-            self.context.logger.info(
-                "Native balance is None. Sending the ERROR event..."
-            )
-            return Event.ERROR.value
-
-        # Make a decision based on the balance's last number
-        last_number = int(str(native_balance)[-1])
-
-        # If the number is even, we transact
-        if last_number % 2 == 0:
-            self.context.logger.info("Number is even. Transacting.")
-            return Event.TRANSACT.value
-
-        # Otherwise we send the DONE event
-        self.context.logger.info("Number is odd. Not transacting.")
-        return Event.DONE.value
-
-    def get_block_number(self) -> Generator[None, None, Optional[int]]:
-        """Get the block number"""
-
-        # Call the ledger connection (equivalent to web3.py)
-        ledger_api_response = yield from self.get_ledger_api_response(
-            performative=LedgerApiMessage.Performative.GET_STATE,
-            ledger_callable="get_block_number",
-            chain_id=GNOSIS_CHAIN_ID,
+    def determine_winner_and_prize(self, bet_details: list) -> Tuple[str, int]:
+        """Determine result and calculate prize amount based on holder counts."""
+        
+        # Get holder counts from synchronized data
+        arbitrum_holders = self.synchronized_data.arbitrum_holders
+        base_holders = self.synchronized_data.base_holders
+        
+        # Get user's choice and bet amount from bet details list
+        user_choice = bet_details[0] if bet_details else 0
+        bet_amount = bet_details[1] if len(bet_details) > 1 else 0
+        
+        # Convert choice to chain selection (1 for arbitrum, 2 for base)
+        user_selected = "arbitrum" if user_choice == 1 else "base"
+        
+        # Determine actual winner based on holder counts
+        actual_winner = "arbitrum" if arbitrum_holders > base_holders else "base"
+        
+        # Determine if user won or lost
+        result = "win" if user_selected == actual_winner else "lose"
+        
+        # Calculate prize amount
+        holder_difference = abs(arbitrum_holders - base_holders)
+        prize_multiplier = holder_difference / 1000  # 1 wei per 1000 holder difference
+        prize_amount = int(bet_amount * prize_multiplier) if result == "win" else 0
+        
+        self.context.logger.info(
+            f"User chose {user_selected}, actual winner was {actual_winner}, "
+            f"result is {result}, prize amount is {prize_amount} wei"
         )
+        
+        return result, prize_amount
 
-        # Check for errors on the response
-        if ledger_api_response.performative != LedgerApiMessage.Performative.STATE:
-            self.context.logger.error(
-                f"Error while retrieving block number: {ledger_api_response}"
-            )
+    def get_bet_details_from_ipfs(self) -> Generator[None, None, Optional[Dict]]:
+        """Get bet details from IPFS"""
+        ipfs_hash = self.synchronized_data.bet_details_ipfs_hash
+        if not ipfs_hash:
+            self.context.logger.error("No bet details IPFS hash available")
             return None
-
-        # Extract and return the block number
-        block_number = cast(
-            int, ledger_api_response.state.body["get_block_number_result"]
+            
+        bet_details = yield from self.get_from_ipfs(
+            ipfs_hash=ipfs_hash, 
+            filetype=SupportedFiletype.JSON
         )
-
-        self.context.logger.error(f"Got block number: {block_number}")
-
-        return block_number
-
-    def get_price_from_ipfs(self) -> Generator[None, None, Optional[dict]]:
-        """Load the price data from IPFS"""
-        ipfs_hash = self.synchronized_data.price_ipfs_hash
-        price = yield from self.get_from_ipfs(
-            ipfs_hash=ipfs_hash, filetype=SupportedFiletype.JSON
-        )
-        self.context.logger.error(f"Got price from IPFS: {price}")
-        return price
+        
+        if not bet_details or "bet_details" not in bet_details:
+            self.context.logger.error("Invalid bet details format")
+            return None
+            
+        return bet_details["bet_details"]
 
 
 class TxPreparationBehaviour(
