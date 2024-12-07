@@ -29,10 +29,8 @@ from packages.valory.skills.abstract_round_abci.base import BaseTxPayload
 class DataPullPayload(BaseTxPayload):
     """Represent a transaction payload for the DataPullRound."""
 
-    price: Optional[float]
-    price_ipfs_hash: Optional[str]
-    native_balance: Optional[float]
-    erc20_balance: Optional[float]
+    arbitrum_holders: Optional[int]
+    base_holders: Optional[int]
 
 
 @dataclass(frozen=True)

@@ -102,6 +102,15 @@ class SynchronizedData(BaseSynchronizedData):
     def tx_submitter(self) -> str:
         """Get the round that submitted a tx to transaction_settlement_abci."""
         return str(self.db.get_strict("tx_submitter"))
+    @property
+    def base_holders(self) -> int:
+        """Get the base holders."""
+        return int(self.db.get("base_holders", 0))
+    
+    @property
+    def arbitrum_holders(self) -> int:
+        """Get the arbitrum holders."""
+        return int(self.db.get("arbitrum_holders", 0))
 
 
 class DataPullRound(CollectSameUntilThresholdRound):
@@ -119,10 +128,8 @@ class DataPullRound(CollectSameUntilThresholdRound):
     # and where to store it in the synchronized data. Notice that the order follows the same order
     # from the payload class.
     selection_key = (
-        get_name(SynchronizedData.price),
-        get_name(SynchronizedData.price_ipfs_hash),
-        get_name(SynchronizedData.native_balance),
-        get_name(SynchronizedData.erc20_balance),
+        get_name(SynchronizedData.base_holders),
+        get_name(SynchronizedData.arbitrum_holders),
     )
 
     # Event.ROUND_TIMEOUT  # this needs to be referenced for static checkers

@@ -30,6 +30,9 @@ from packages.valory.contracts.gnosis_safe.contract import (
     GnosisSafeContract,
     SafeOperation,
 )
+
+from packages.valory.contracts.betchain.contract import BetChain as BettingContract
+
 from packages.valory.contracts.multisend.contract import (
     MultiSendContract,
     MultiSendOperation,
@@ -125,158 +128,101 @@ class DataPullBehaviour(LearningBaseBehaviour):  # pylint: disable=too-many-ance
         with self.context.benchmark_tool.measure(self.behaviour_id).local():
             sender = self.context.agent_address
 
-            # First mehtod to call an API: simple call to get_http_response
-            price = yield from self.get_token_price_simple()
+            # Get the first pending bet
+            first_pending_bet = 1
 
-            # Second method to call an API: use ApiSpecs
-            # This call replaces the previous price, it is just an example
-            price = yield from self.get_token_price_specs()
+            # Get the bet details
+            bet_details = yield from self.get_bet_details(first_pending_bet)
+            if bet_details is None:
+                self.context.logger.error("Failed to get bet details.")
+            else:
+                self.context.logger.info(f"Bet details: {bet_details}")
 
-            # Store the price in IPFS
-            price_ipfs_hash = yield from self.send_price_to_ipfs(price)
+            # Get the number of token holders
+            token_holders = yield from self.get_token_holders()
+            arbitrum_holders = token_holders["arbitrum"]
+            base_holders = token_holders["base"]
 
-            # Get the native balance
-            native_balance = yield from self.get_native_balance()
+            if arbitrum_holders and base_holders:
+                # Prepare the payload to be shared with other agents
+                payload = DataPullPayload(
+                    sender=sender,
+                    arbitrum_holders=arbitrum_holders,
+                    base_holders=base_holders,
+                )
 
-            # Get the token balance
-            erc20_balance = yield from self.get_erc20_balance()
+                # Send the payload to all agents and mark the behaviour as done
+                with self.context.benchmark_tool.measure(self.behaviour_id).consensus():
+                    yield from self.send_a2a_transaction(payload)
+                    yield from self.wait_until_round_end()
 
-            # Prepare the payload to be shared with other agents
-            # After consensus, all the agents will have the same price, price_ipfs_hash and balance variables in their synchronized data
-            payload = DataPullPayload(
-                sender=sender,
-                price=price,
-                price_ipfs_hash=price_ipfs_hash,
-                native_balance=native_balance,
-                erc20_balance=erc20_balance,
-            )
+                self.set_done()
 
-        # Send the payload to all agents and mark the behaviour as done
-        with self.context.benchmark_tool.measure(self.behaviour_id).consensus():
-            yield from self.send_a2a_transaction(payload)
-            yield from self.wait_until_round_end()
+    def get_token_holders(self) -> Generator[None, None, Optional[Dict[str, int]]]:
+        """Get the number of token holders from Blockscout for both Arbitrum and Base"""
 
-        self.set_done()
+        holders = {"arbitrum": 0, "base": 0}
 
-    def get_token_price_simple(self) -> Generator[None, None, Optional[float]]:
-        """Get token price from Coingecko usinga simple HTTP request"""
-
-        # Prepare the url and the headers
-        url_template = self.params.coingecko_price_template
-        url = url_template.replace("{api_key}", self.params.coingecko_api_key)
+        # URLs and headers for both APIs
+        urls = {
+            "arbitrum": "https://arbitrum.blockscout.com/api/v2/tokens/0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9",
+            "base": "https://base.blockscout.com/api/v2/tokens/0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2",
+        }
         headers = {"accept": "application/json"}
 
-        # Make the HTTP request to Coingecko API
-        response = yield from self.get_http_response(
-            method="GET", url=url, headers=headers
-        )
-
-        # Handle HTTP errors
-        if response.status_code != HTTP_OK:
-            self.context.logger.error(
-                f"Error while pulling the price from CoinGecko: {response.body}"
+        for network, url in urls.items():
+            # Make the HTTP request to Blockscout API
+            response = yield from self.get_http_response(
+                method="GET", url=url, headers=headers
             )
 
-        # Load the response
-        api_data = json.loads(response.body)
-        price = api_data["autonolas"]["usd"]
+            # Handle HTTP errors
+            if response.status_code != HTTP_OK:
+                self.context.logger.error(
+                    f"Error while pulling the number of holders from Blockscout ({network}): {response.body}"
+                )
+                continue
 
-        self.context.logger.info(f"Got token price from Coingecko: {price}")
+            # Load the response
+            api_data = json.loads(response.body)
+            holders[network] = int(api_data["holders"])
 
-        return price
+        return holders
 
-    def get_token_price_specs(self) -> Generator[None, None, Optional[float]]:
-        """Get token price from Coingecko using ApiSpecs"""
+    def get_first_pending_bet(self) -> Generator[None, None, Optional[int]]:
+        """Get the first pending bet from the BettingContract."""
 
-        # Get the specs
-        specs = self.coingecko_specs.get_spec()
-
-        # Make the call
-        raw_response = yield from self.get_http_response(**specs)
-
-        # Process the response
-        response = self.coingecko_specs.process_response(raw_response)
-
-        # Get the price
-        price = response.get("usd", None)
-        self.context.logger.info(f"Got token price from Coingecko: {price}")
-        return price
-
-    def send_price_to_ipfs(self, price) -> Generator[None, None, Optional[str]]:
-        """Store the token price in IPFS"""
-        data = {"price": price}
-        price_ipfs_hash = yield from self.send_to_ipfs(
-            filename=self.metadata_filepath, obj=data, filetype=SupportedFiletype.JSON
-        )
-        self.context.logger.info(
-            f"Price data stored in IPFS: https://gateway.autonolas.tech/ipfs/{price_ipfs_hash}"
-        )
-        return price_ipfs_hash
-
-    def get_erc20_balance(self) -> Generator[None, None, Optional[float]]:
-        """Get ERC20 balance"""
-        self.context.logger.info(
-            f"Getting Olas balance for Safe {self.synchronized_data.safe_contract_address}"
+        contract_api_response = yield from self.get_contract_api_response(
+            performative=ContractApiMessage.Performative.GET_STATE,
+            contract_address=self.params.betchain_contract_address,
+            contract_id=str(BettingContract.contract_id),
+            contract_callable="get_first_pending_bet",
         )
 
-        # Use the contract api to interact with the ERC20 contract
-        response_msg = yield from self.get_contract_api_response(
-            performative=ContractApiMessage.Performative.GET_RAW_TRANSACTION,  # type: ignore
-            contract_address=self.params.olas_token_address,
-            contract_id=str(ERC20.contract_id),
-            contract_callable="check_balance",
-            account=self.synchronized_data.safe_contract_address,
-            chain_id=GNOSIS_CHAIN_ID,
-        )
-
-        # Check that the response is what we expect
-        if response_msg.performative != ContractApiMessage.Performative.RAW_TRANSACTION:
-            self.context.logger.error(
-                f"Error while retrieving the balance: {response_msg}"
-            )
+        if contract_api_response.performative != ContractApiMessage.Performative.STATE:
+            self.context.logger.error("Error fetching the first pending bet")
             return None
 
-        balance = response_msg.raw_transaction.body.get("token", None)
+        first_pending_bet = cast(int, contract_api_response.state.body["data"])
+        return first_pending_bet
 
-        # Ensure that the balance is not None
-        if balance is None:
-            self.context.logger.error(
-                f"Error while retrieving the balance:  {response_msg}"
-            )
+    def get_bet_details(self, bet_id: int) -> Generator[None, None, Optional[Dict]]:
+        """Get the details of a bet from the BettingContract."""
+
+        contract_api_response = yield from self.get_contract_api_response(
+            performative=ContractApiMessage.Performative.GET_STATE,
+            contract_address=self.params.betchain_contract_address,
+            contract_id=str(BettingContract.contract_id),
+            contract_callable="get_bet_details",
+            bet_id=bet_id,
+        )
+
+        if contract_api_response.performative != ContractApiMessage.Performative.STATE:
+            self.context.logger.error(f"Error fetching bet details for bet ID {bet_id}")
             return None
 
-        balance = balance / 10**18  # from wei
-
-        self.context.logger.info(
-            f"Account {self.synchronized_data.safe_contract_address} has {balance} Olas"
-        )
-        return balance
-
-    def get_native_balance(self) -> Generator[None, None, Optional[float]]:
-        """Get the native balance"""
-        self.context.logger.info(
-            f"Getting native balance for Safe {self.synchronized_data.safe_contract_address}"
-        )
-
-        ledger_api_response = yield from self.get_ledger_api_response(
-            performative=LedgerApiMessage.Performative.GET_STATE,
-            ledger_callable="get_balance",
-            account=self.synchronized_data.safe_contract_address,
-            chain_id=GNOSIS_CHAIN_ID,
-        )
-
-        if ledger_api_response.performative != LedgerApiMessage.Performative.STATE:
-            self.context.logger.error(
-                f"Error while retrieving the native balance: {ledger_api_response}"
-            )
-            return None
-
-        balance = cast(int, ledger_api_response.state.body["get_balance_result"])
-        balance = balance / 10**18  # from wei
-
-        self.context.logger.error(f"Got native balance: {balance}")
-
-        return balance
+        bet_details = cast(Dict, contract_api_response.state.body["data"])
+        return bet_details
 
 
 class DecisionMakingBehaviour(
