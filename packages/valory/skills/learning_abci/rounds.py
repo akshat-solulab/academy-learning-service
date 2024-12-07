@@ -111,6 +111,11 @@ class SynchronizedData(BaseSynchronizedData):
     def arbitrum_holders(self) -> int:
         """Get the arbitrum holders."""
         return int(self.db.get("arbitrum_holders", 0))
+    
+    @property
+    def bet_details_ipfs_hash(self) -> Optional[str]:
+        """Get the bet details ipfs hash."""
+        return self.db.get("bet_details_ipfs_hash", None)
 
 
 class DataPullRound(CollectSameUntilThresholdRound):
@@ -130,6 +135,7 @@ class DataPullRound(CollectSameUntilThresholdRound):
     selection_key = (
         get_name(SynchronizedData.base_holders),
         get_name(SynchronizedData.arbitrum_holders),
+        get_name(SynchronizedData.bet_details_ipfs_hash)
     )
 
     # Event.ROUND_TIMEOUT  # this needs to be referenced for static checkers

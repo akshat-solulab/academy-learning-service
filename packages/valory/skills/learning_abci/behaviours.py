@@ -144,6 +144,7 @@ class DataPullBehaviour(LearningBaseBehaviour):  # pylint: disable=too-many-ance
 
             # Calculate the first pending bet using total and resolved bets
             first_pending_bet = None
+            bet_details = None
             if total_bets is not None and resolved_bets is not None:
                 if resolved_bets < total_bets:
                     first_pending_bet = resolved_bets + 1
@@ -151,26 +152,8 @@ class DataPullBehaviour(LearningBaseBehaviour):  # pylint: disable=too-many-ance
                     
                     # Only get bet details if we have a valid pending bet
                     bet_details = yield from self.get_bet_details(first_pending_bet)
-                    if bet_details is not None:
-                        # Create metadata with bet details
-                        metadata = {
-                            "timestamp": self.get_sync_timestamp(),
-                            "bet_details": bet_details,
-                        }
-                        
-                        # Save metadata to temporary file
-                        with open(self.metadata_filepath, "w", encoding="utf-8") as f:
-                            json.dump(metadata, f)
-
-                        # Store file in IPFS and get hash
-                        bet_ipfs_hash = yield from self.store_to_ipfs(
-                            filename=self.metadata_filepath,
-                            filetype=SupportedFiletype.JSON,
-                        )
-                        if bet_ipfs_hash:
-                            self.context.logger.info(f"Stored bet details to IPFS with hash: {bet_ipfs_hash}")
-                        else:
-                            self.context.logger.error("Failed to store bet details to IPFS")
+                   
+                    bet_ipfs_hash = yield from self.store_bet_details_to_ipfs(bet_details)
 
             # Get the number of token holders
             token_holders = yield from self.get_token_holders()
@@ -182,7 +165,7 @@ class DataPullBehaviour(LearningBaseBehaviour):  # pylint: disable=too-many-ance
                 sender=sender,
                 arbitrum_holders=arbitrum_holders,
                 base_holders=base_holders,
-                bet_ipfs_hash=bet_ipfs_hash,
+                bet_details_ipfs_hash=bet_ipfs_hash,
             )
 
             # Send the payload to all agents and mark the behaviour as done
@@ -325,6 +308,30 @@ class DataPullBehaviour(LearningBaseBehaviour):  # pylint: disable=too-many-ance
 
         self.context.logger.info(f"Resolved bets: {resolved_bets}")
         return resolved_bets
+
+    def store_bet_details_to_ipfs(self, bet_details: Dict) -> Generator[None, None, Optional[str]]:
+        """Store bet details in IPFS"""
+        # Create metadata object with timestamp and bet details
+        metadata = {
+            "timestamp": self.get_sync_timestamp(),
+            "bet_details": bet_details
+        }
+        
+        # Store metadata in IPFS
+        ipfs_hash = yield from self.send_to_ipfs(
+            filename=self.metadata_filepath,
+            obj=metadata, 
+            filetype=SupportedFiletype.JSON
+        )
+        
+        if ipfs_hash:
+            self.context.logger.info(
+                f"Bet details stored in IPFS: https://gateway.autonolas.tech/ipfs/{ipfs_hash}"
+            )
+        else:
+            self.context.logger.error("Failed to store bet details in IPFS")
+            
+        return ipfs_hash
 
 
 class DecisionMakingBehaviour(
