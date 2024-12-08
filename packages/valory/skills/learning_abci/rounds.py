@@ -138,6 +138,11 @@ class SynchronizedData(BaseSynchronizedData):
         """Get the result."""
         return str(self.db.get("result", ""))
 
+    @property
+    def bet_id(self) -> int:
+        """Get the bet id."""
+        return int(self.db.get("bet_id", 0))
+
 
 class DataPullRound(CollectSameUntilThresholdRound):
     """DataPullRound"""
@@ -156,7 +161,8 @@ class DataPullRound(CollectSameUntilThresholdRound):
     selection_key = (
         get_name(SynchronizedData.base_holders),
         get_name(SynchronizedData.arbitrum_holders),
-        get_name(SynchronizedData.bet_details_ipfs_hash)
+        get_name(SynchronizedData.bet_details_ipfs_hash),
+        get_name(SynchronizedData.bet_id)
     )
 
     # Event.ROUND_TIMEOUT  # this needs to be referenced for static checkers
@@ -169,7 +175,8 @@ class DecisionMakingRound(CollectionRound):
     synchronized_data_class = SynchronizedData
 
     collection_key = get_name(SynchronizedData.participant_to_decision_making_round)
-    selection_key = (get_name(SynchronizedData.result), get_name(SynchronizedData.prize_amount))
+    selection_key = (get_name(SynchronizedData.result),
+                     get_name(SynchronizedData.prize_amount))
 
     def end_block(self) -> Optional[Tuple[BaseSynchronizedData, Event]]:
         """Process the end of the block."""
@@ -178,16 +185,16 @@ class DecisionMakingRound(CollectionRound):
 
         # Get first payload since we don't need consensus
         payload = next(iter(self.collection.values()))
-        
+
         # Update synchronized data
         synchronized_data = self.synchronized_data.update(
             result=payload.result,
             prize_amount=int(payload.prize_amount)
         )
-        
+
         # Determine event based on prize amount
         event = Event.TRANSACT if int(payload.prize_amount) > 0 else Event.DONE
-        
+
         return synchronized_data, event
 
 

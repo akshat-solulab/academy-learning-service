@@ -128,6 +128,7 @@ class DataPullBehaviour(LearningBaseBehaviour):  # pylint: disable=too-many-ance
         with self.context.benchmark_tool.measure(self.behaviour_id).local():
             sender = self.context.agent_address
             bet_ipfs_hash = None  # Initialize hash variable
+            bet_id = None  # Initialize bet_id variable
             
             # Get total and resolved bets
             total_bets = yield from self.get_total_bets()
@@ -143,17 +144,15 @@ class DataPullBehaviour(LearningBaseBehaviour):  # pylint: disable=too-many-ance
                 self.context.logger.info(f"Resolved bets: {resolved_bets}")
 
             # Calculate the first pending bet using total and resolved bets
-            first_pending_bet = None
-            bet_details = None
             if total_bets is not None and resolved_bets is not None:
                 if resolved_bets < total_bets:
-                    first_pending_bet = resolved_bets + 1
-                    self.context.logger.info(f"First pending bet: {first_pending_bet}")
+                    bet_id = resolved_bets + 1  # Set the bet_id
+                    self.context.logger.info(f"First pending bet: {bet_id}")
                     
                     # Only get bet details if we have a valid pending bet
-                    bet_details = yield from self.get_bet_details(first_pending_bet)
-                   
-                    bet_ipfs_hash = yield from self.store_bet_details_to_ipfs(bet_details)
+                    bet_details = yield from self.get_bet_details(bet_id)
+                    if bet_details is not None:
+                        bet_ipfs_hash = yield from self.store_bet_details_to_ipfs(bet_details)
 
             # Get the number of token holders
             token_holders = yield from self.get_token_holders()
@@ -166,6 +165,7 @@ class DataPullBehaviour(LearningBaseBehaviour):  # pylint: disable=too-many-ance
                 arbitrum_holders=arbitrum_holders,
                 base_holders=base_holders,
                 bet_details_ipfs_hash=bet_ipfs_hash,
+                bet_id=bet_id  # Add bet_id to payload
             )
 
             # Send the payload to all agents and mark the behaviour as done
@@ -452,35 +452,23 @@ class TxPreparationBehaviour(
         self.set_done()
 
     def get_tx_hash(self) -> Generator[None, None, Optional[str]]:
-        """Get the transaction hash"""
-
-        # Here want to showcase how to prepare different types of transactions.
-        # Depending on the timestamp's last number, we will make a native transaction,
-        # an ERC20 transaction or both.
-
-        # All transactions need to be sent from the Safe controlled by the agents.
-
-        # Again, make a decision based on the timestamp (on its last number)
-        now = int(self.get_sync_timestamp())
-        self.context.logger.info(f"Timestamp is {now}")
-        last_number = int(str(now)[-1])
-
-        # Native transaction (Safe -> recipient)
-        if last_number in [0, 1, 2, 3]:
-            self.context.logger.info("Preparing a native transaction")
-            tx_hash = yield from self.get_native_transfer_safe_tx_hash()
-            return tx_hash
-
-        # ERC20 transaction (Safe -> recipient)
-        if last_number in [4, 5, 6]:
-            self.context.logger.info("Preparing an ERC20 transaction")
-            tx_hash = yield from self.get_erc20_transfer_safe_tx_hash()
-            return tx_hash
-
-        # Multisend transaction (both native and ERC20) (Safe -> recipient)
-        self.context.logger.info("Preparing a multisend transaction")
-        tx_hash = yield from self.get_multisend_safe_tx_hash()
-        return tx_hash
+        """Get the transaction hash for resolving the bet"""
+        self.context.logger.info("Preparing bet resolution transaction")
+        
+        # Get the resolve bet data
+        resolve_bet_data_hex = yield from self.get_resolve_bet_data()
+        if resolve_bet_data_hex is None:
+            return None
+            
+        # Prepare safe transaction for bet resolution
+        safe_tx_hash = yield from self._build_safe_tx_hash(
+            to_address=self.params.betchain_contract_address,
+            value=0,  # No value transfer needed for resolution
+            data=bytes.fromhex(resolve_bet_data_hex)
+        )
+        
+        self.context.logger.info(f"Bet resolution transaction hash: {safe_tx_hash}")
+        return safe_tx_hash
 
     def get_native_transfer_safe_tx_hash(self) -> Generator[None, None, Optional[str]]:
         """Prepare a native safe transaction"""
@@ -689,6 +677,47 @@ class TxPreparationBehaviour(
         self.context.logger.info(f"Safe transaction hash is {safe_tx_hash}")
 
         return safe_tx_hash
+
+    def get_resolve_bet_data(self) -> Generator[None, None, Optional[str]]:
+        """Get the resolve bet transaction data"""
+        self.context.logger.info("Preparing resolve bet transaction")
+        
+        # Get bet ID and result from synchronized data
+        bet_id = self.synchronized_data.bet_id
+        result = 1 if self.synchronized_data.result == "win" else 0
+        ipfs_hash = self.synchronized_data.bet_details_ipfs_hash
+
+        if not ipfs_hash:
+            self.context.logger.error("No IPFS hash available for bet resolution")
+            return None
+
+        # Use the contract api to interact with the BettingContract
+        response_msg = yield from self.get_contract_api_response(
+            performative=ContractApiMessage.Performative.GET_RAW_TRANSACTION,
+            contract_address=self.params.betchain_contract_address,
+            contract_id=str(BettingContract.contract_id),
+            contract_callable="resolve_bet",
+            bet_id=bet_id,
+            result=result,
+            ipfs_hash=ipfs_hash,
+            chain_id=GNOSIS_CHAIN_ID,
+        )
+
+        # Check response
+        if response_msg.performative != ContractApiMessage.Performative.RAW_TRANSACTION:
+            self.context.logger.error(
+                f"Error while preparing resolve bet transaction: {response_msg}"
+            )
+            return None
+
+        data_bytes: Optional[bytes] = response_msg.raw_transaction.body.get("data", None)
+        if data_bytes is None:
+            self.context.logger.error("No data returned for resolve bet transaction")
+            return None
+
+        data_hex = data_bytes.hex()
+        self.context.logger.info(f"Resolve bet data is {data_hex}")
+        return data_hex
 
 
 class LearningRoundBehaviour(AbstractRoundBehaviour):

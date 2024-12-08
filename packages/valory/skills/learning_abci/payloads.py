@@ -32,6 +32,7 @@ class DataPullPayload(BaseTxPayload):
     arbitrum_holders: Optional[int]
     base_holders: Optional[int]
     bet_details_ipfs_hash: Optional[str]
+    bet_id: Optional[int]
 
 
 @dataclass(frozen=True)
@@ -40,7 +41,6 @@ class DecisionMakingPayload(BaseTxPayload):
     event: str
     result: str  # "win" or "lose"
     prize_amount: str  # Store integer as string to avoid serialization issues
-
 
 
 @dataclass(frozen=True)
