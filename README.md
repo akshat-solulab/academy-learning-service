@@ -12,6 +12,8 @@ This agent service facilitates a decentralized betting game where:
     - Determines winners based on actual holder numbers
     - Calculates prizes proportional to holder count differences
     - Executes prize payments and bet resolution transactions using Safe multisig
+- BETCHAIN_CONTRACT_ADDRESS=0x8209b8E7C2585D3Ac6F7DfEE462b6f166B71e1bE
+
 
 ## 🏗️ Architecture
 
