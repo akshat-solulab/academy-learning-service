@@ -778,41 +778,24 @@ class TxPreparationBehaviour(
             self.context.logger.error("No tx hash in response")
             return None
 
-        try:
-            # Convert to bytes ensuring exactly 32 bytes
-            if isinstance(safe_tx_hash, str):
-                # Remove 0x prefix if present
-                if safe_tx_hash.startswith("0x"):
-                    safe_tx_hash = safe_tx_hash[2:]
-                # Convert hex string to bytes
-                safe_tx_hash_bytes = bytes.fromhex(safe_tx_hash.zfill(64))  # Ensure 32 bytes (64 hex chars)
-            elif isinstance(safe_tx_hash, bytes):
-                safe_tx_hash_bytes = safe_tx_hash.rjust(32, b'\0')
-            else:
-                self.context.logger.error(f"Unexpected safe_tx_hash type: {type(safe_tx_hash)}")
-                return None
-
-            self.context.logger.info(f"Processed safe_tx_hash length: {len(safe_tx_hash_bytes)} bytes")
-            self.context.logger.info(f"Processed safe_tx_hash hex: {safe_tx_hash_bytes.hex()}")
-
-            # Convert data to hex string for hashing
-            data_hex = data.hex() if isinstance(data, bytes) else ""
-
+        cast(str, safe_tx_hash)
+        
+        if safe_tx_hash.startswith("0x"):
+            safe_tx_hash = safe_tx_hash[2:]
+            #     # Convert hex string to bytes
+            # safe_tx_hash_bytes = bytes.fromhex(safe_tx_hash.zfill(64))  # Ensure 32 bytes (64 hex chars)
+    
             # Generate final hash
             tx_hash = hash_payload_to_hex(
-                safe_tx_hash=safe_tx_hash_bytes,
+                safe_tx_hash=safe_tx_hash,
                 ether_value=value,
                 safe_tx_gas=SAFE_GAS,
                 to_address=to_address,
-                data=data_hex,
+                data=data,
                 operation=operation,
             )
             self.context.logger.info(f"Generated tx hash: {tx_hash}")
             return tx_hash
-            
-        except (ValueError, AttributeError) as e:
-            self.context.logger.error(f"Failed to process safe_tx_hash: {e}")
-            return None
 
     def get_resolve_bet_data(self) -> Generator[None, None, Optional[str]]:
         """Get the resolve bet transaction data"""
