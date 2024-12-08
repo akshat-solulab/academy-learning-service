@@ -442,6 +442,16 @@ class TxPreparationBehaviour(
         with self.context.benchmark_tool.measure(self.behaviour_id).local():
             sender = self.context.agent_address
 
+        # Get prize amount from synchronized data
+            try:
+                prize_amount = int(self.synchronized_data.prize_amount)
+                if prize_amount < 0:
+                    self.context.logger.error("Invalid prize amount")
+                    return None
+            except (ValueError, TypeError):
+                self.context.logger.error("Failed to parse prize amount")
+                return None
+
             # Get prize transfer data
             prize_tx = yield from self.get_prize_transfer_tx()
             if not prize_tx:
@@ -472,20 +482,13 @@ class TxPreparationBehaviour(
                 return None
 
             multisend_data = multisend_msg.raw_transaction.body.get("data")
-            if not multisend_data:
-                self.context.logger.error("No multisend data received")
-                return None
-
-            # Ensure multisend_data is bytes
-            if isinstance(multisend_data, str):
-                if multisend_data.startswith("0x"):
-                    multisend_data = bytes.fromhex(multisend_data[2:])
-                else:
-                    multisend_data = bytes.fromhex(multisend_data)
+            cast(str, multisend_data)
+      
+            multisend_data = bytes.fromhex(multisend_data[2:])
 
             tx_hash = yield from self._build_safe_tx_hash(
                 to_address=self.params.multisend_address,
-                value=0,
+                value=prize_amount,
                 data=multisend_data,
                 operation=SafeOperation.DELEGATE_CALL.value
             )
@@ -525,36 +528,11 @@ class TxPreparationBehaviour(
             self.context.logger.error("Failed to get winner address")
             return None
 
-        # Prepare native transfer transaction
-        response_msg = yield from self.get_contract_api_response(
-            performative=ContractApiMessage.Performative.GET_RAW_TRANSACTION,
-            contract_address=self.synchronized_data.safe_contract_address,
-            contract_id=str(GnosisSafeContract.contract_id),
-            contract_callable="get_raw_safe_transaction_hash",
-            to_address=winner_address,
-            value=prize_amount,
-            data=b"",  # Empty data for native transfer
-            safe_tx_gas=SAFE_GAS,
-            chain_id=GNOSIS_CHAIN_ID,
-        )
-
-        if response_msg.performative != ContractApiMessage.Performative.RAW_TRANSACTION:
-            self.context.logger.error(
-                f"Could not get prize transfer hash. "
-                f"Expected: {ContractApiMessage.Performative.RAW_TRANSACTION.value}, "
-                f"Actual: {response_msg.performative.value}"
-            )
-            return None
-
-        self.context.logger.info(f"Prize transfer response msg is {response_msg}")
-        tx_hash_data = cast(str, response_msg.raw_transaction.body["tx_hash"])
-        self.context.logger.info(f"Prize transfer hash data is {tx_hash_data}")
-
         return {
             "operation": MultiSendOperation.CALL,
             "to": winner_address,
             "value": prize_amount,
-            "data": tx_hash_data if isinstance(tx_hash_data, bytes) else bytes.fromhex(tx_hash_data[2:] if tx_hash_data.startswith("0x") else tx_hash_data),
+            "data": b""
         }
 
     def get_resolve_bet_tx(self) -> Generator[None, None, Optional[Dict]]:
@@ -573,7 +551,7 @@ class TxPreparationBehaviour(
         # Prepare contract call
         response_msg = yield from self.get_contract_api_response(
             performative=ContractApiMessage.Performative.GET_RAW_TRANSACTION,
-            contract_address=self.synchronized_data.safe_contract_address,
+            contract_address=self.params.betchain_contract_address,
             contract_id=str(BettingContract.contract_id),
             contract_callable="resolve_bet",
             bet_id=bet_id,
@@ -591,7 +569,7 @@ class TxPreparationBehaviour(
             return None
 
         self.context.logger.info(f"Resolve bet response msg is {response_msg}")
-        tx_data = cast(str, response_msg.raw_transaction.body.get("data"))
+        tx_data = cast(bytes, response_msg.raw_transaction.body.get("data"))
         self.context.logger.info(f"Resolve bet tx data is {tx_data}")
 
         if not tx_data:
@@ -600,9 +578,9 @@ class TxPreparationBehaviour(
 
         return {
             "operation": MultiSendOperation.CALL,
-            "to": self.params.betchain_contract_address,
+            "to": self.params.betchain_contract_address, 
             "value": 0,
-            "data": tx_data if isinstance(tx_data, bytes) else bytes.fromhex(tx_data[2:] if tx_data.startswith("0x") else tx_data),
+            "data": tx_data.hex() if isinstance(tx_data, bytes) else tx_data[2:] if tx_data.startswith("0x") else tx_data,
         }
 
     def get_tx_hash(self) -> Generator[None, None, Optional[str]]:
