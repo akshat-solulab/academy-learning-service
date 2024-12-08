@@ -580,7 +580,7 @@ class TxPreparationBehaviour(
             "operation": MultiSendOperation.CALL,
             "to": self.params.betchain_contract_address, 
             "value": 0,
-            "data": tx_data.hex() if isinstance(tx_data, bytes) else tx_data[2:] if tx_data.startswith("0x") else tx_data,
+            "data": tx_data.hex()
         }
 
     def get_tx_hash(self) -> Generator[None, None, Optional[str]]:
