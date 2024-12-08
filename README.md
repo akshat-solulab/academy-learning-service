@@ -32,23 +32,29 @@ Key Components:
 
 ## 🚀 Quick Start
 
-```bash
 # Clone repository
-git clone git@github.com:valory-xyz/academy-learning-agent.git
+```bash
+git clone https://github.com/akshat-solulab/academy-learning-service.git
 cd academy-learning-agent
+```
 
 # Setup environment
+```bash
 poetry shell
 poetry install
 autonomy packages sync --update-packages
+```
 
 # Generate keys
+```bash
 autonomy generate-key ethereum -n 4
+```
 
 
 ## ⚙️ Configuration
 
 1. Setup environment:
+
 ```bash
 cp sample.env .env
 ```
