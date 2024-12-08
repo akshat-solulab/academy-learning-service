@@ -115,6 +115,29 @@ class LearningBaseBehaviour(BaseBehaviour, ABC):  # pylint: disable=too-many-anc
         ).round_sequence.last_round_transition_timestamp.timestamp()
 
         return now
+    
+    def get_bet_details_from_ipfs(self) -> Generator[None, None, Optional[Dict]]:
+        """Get bet details from IPFS"""
+        ipfs_hash = self.synchronized_data.bet_details_ipfs_hash
+        if not ipfs_hash:
+            self.context.logger.error("No IPFS hash available")
+            return None
+            
+        try:
+            bet_details = yield from self.get_from_ipfs(
+                ipfs_hash=ipfs_hash,
+                filetype=SupportedFiletype.JSON
+            )
+            
+            if not bet_details or "bet_details" not in bet_details:
+                self.context.logger.error("Invalid bet details format")
+                return None
+                
+            return bet_details["bet_details"]
+        except Exception as e:
+            self.context.logger.error(f"Failed to get bet details from IPFS: {e}")
+            return None
+
 
 
 class DataPullBehaviour(LearningBaseBehaviour):  # pylint: disable=too-many-ancestors
@@ -406,24 +429,6 @@ class DecisionMakingBehaviour(
         
         return result, prize_amount
 
-    def get_bet_details_from_ipfs(self) -> Generator[None, None, Optional[Dict]]:
-        """Get bet details from IPFS"""
-        ipfs_hash = self.synchronized_data.bet_details_ipfs_hash
-        if not ipfs_hash:
-            self.context.logger.error("No bet details IPFS hash available")
-            return None
-            
-        bet_details = yield from self.get_from_ipfs(
-            ipfs_hash=ipfs_hash, 
-            filetype=SupportedFiletype.JSON
-        )
-        
-        if not bet_details or "bet_details" not in bet_details:
-            self.context.logger.error("Invalid bet details format")
-            return None
-            
-        return bet_details["bet_details"]
-
 
 class TxPreparationBehaviour(
     LearningBaseBehaviour
@@ -434,15 +439,64 @@ class TxPreparationBehaviour(
 
     def async_act(self) -> Generator:
         """Do the act, supporting asynchronous execution."""
-
         with self.context.benchmark_tool.measure(self.behaviour_id).local():
             sender = self.context.agent_address
 
-            # Get the transaction hash
-            tx_hash = yield from self.get_tx_hash()
+            # Get prize transfer data
+            prize_tx = yield from self.get_prize_transfer_tx()
+            if not prize_tx:
+                self.context.logger.error("Failed to prepare prize transfer tx")
+                return None
+
+            # Get bet resolution data
+            resolve_tx = yield from self.get_resolve_bet_tx()
+            if not resolve_tx:
+                self.context.logger.error("Failed to prepare resolve bet tx")
+                return None
+
+            # Combine transactions for multisend
+            multi_send_txs = [prize_tx, resolve_tx]
+
+            # Get multisend tx data
+            multisend_msg = yield from self.get_contract_api_response(
+                performative=ContractApiMessage.Performative.GET_RAW_TRANSACTION,
+                contract_address=self.params.multisend_address,
+                contract_id=str(MultiSendContract.contract_id),
+                contract_callable="get_tx_data",
+                multi_send_txs=multi_send_txs,
+                chain_id=GNOSIS_CHAIN_ID,
+            )
+
+            if multisend_msg.performative != ContractApiMessage.Performative.RAW_TRANSACTION:
+                self.context.logger.error(f"Invalid multisend response: {multisend_msg}")
+                return None
+
+            multisend_data = multisend_msg.raw_transaction.body.get("data")
+            if not multisend_data:
+                self.context.logger.error("No multisend data received")
+                return None
+
+            # Ensure multisend_data is bytes
+            if isinstance(multisend_data, str):
+                if multisend_data.startswith("0x"):
+                    multisend_data = bytes.fromhex(multisend_data[2:])
+                else:
+                    multisend_data = bytes.fromhex(multisend_data)
+
+            tx_hash = yield from self._build_safe_tx_hash(
+                to_address=self.params.multisend_address,
+                value=0,
+                data=multisend_data,
+                operation=SafeOperation.DELEGATE_CALL.value
+            )
+
+            if not tx_hash:
+                self.context.logger.error("Failed to build safe tx hash")
+                return None
 
             payload = TxPreparationPayload(
-                sender=sender, tx_submitter=self.auto_behaviour_id(), tx_hash=tx_hash
+                sender=sender,
+                tx_hash=tx_hash,
             )
 
         with self.context.benchmark_tool.measure(self.behaviour_id).consensus():
@@ -450,6 +504,106 @@ class TxPreparationBehaviour(
             yield from self.wait_until_round_end()
 
         self.set_done()
+
+    def get_prize_transfer_tx(self) -> Generator[None, None, Optional[Dict]]:
+        """Get prize transfer transaction data."""
+        self.context.logger.info("Preparing prize transfer transaction")
+
+        try:
+            prize_amount = int(self.synchronized_data.prize_amount)
+            if prize_amount < 0:
+                self.context.logger.error("Invalid prize amount")
+                return None
+        except (ValueError, TypeError):
+            self.context.logger.error("Failed to parse prize amount")
+            return None
+
+        # Get winner address from bet details
+        bet_details = yield from self.get_bet_details_from_ipfs()
+        winner_address = bet_details[0] if bet_details else None
+        if not winner_address:
+            self.context.logger.error("Failed to get winner address")
+            return None
+
+        # Prepare native transfer transaction
+        response_msg = yield from self.get_contract_api_response(
+            performative=ContractApiMessage.Performative.GET_RAW_TRANSACTION,
+            contract_address=self.synchronized_data.safe_contract_address,
+            contract_id=str(GnosisSafeContract.contract_id),
+            contract_callable="get_raw_safe_transaction_hash",
+            to_address=winner_address,
+            value=prize_amount,
+            data=b"",  # Empty data for native transfer
+            safe_tx_gas=SAFE_GAS,
+            chain_id=GNOSIS_CHAIN_ID,
+        )
+
+        if response_msg.performative != ContractApiMessage.Performative.RAW_TRANSACTION:
+            self.context.logger.error(
+                f"Could not get prize transfer hash. "
+                f"Expected: {ContractApiMessage.Performative.RAW_TRANSACTION.value}, "
+                f"Actual: {response_msg.performative.value}"
+            )
+            return None
+
+        self.context.logger.info(f"Prize transfer response msg is {response_msg}")
+        tx_hash_data = cast(str, response_msg.raw_transaction.body["tx_hash"])
+        self.context.logger.info(f"Prize transfer hash data is {tx_hash_data}")
+
+        return {
+            "operation": MultiSendOperation.CALL,
+            "to": winner_address,
+            "value": prize_amount,
+            "data": tx_hash_data if isinstance(tx_hash_data, bytes) else bytes.fromhex(tx_hash_data[2:] if tx_hash_data.startswith("0x") else tx_hash_data),
+        }
+
+    def get_resolve_bet_tx(self) -> Generator[None, None, Optional[Dict]]:
+        """Get bet resolution transaction data."""
+        self.context.logger.info("Preparing bet resolution transaction")
+
+        # Validate bet ID and result
+        bet_id = self.synchronized_data.bet_id
+        if bet_id is None:
+            self.context.logger.error("No bet ID available")
+            return None
+
+        result = 1 if self.synchronized_data.result == "win" else 0
+        ipfs_hash = self.synchronized_data.bet_details_ipfs_hash
+
+        # Prepare contract call
+        response_msg = yield from self.get_contract_api_response(
+            performative=ContractApiMessage.Performative.GET_RAW_TRANSACTION,
+            contract_address=self.synchronized_data.safe_contract_address,
+            contract_id=str(BettingContract.contract_id),
+            contract_callable="resolve_bet",
+            bet_id=bet_id,
+            result=result,
+            ipfs_hash=ipfs_hash,
+            chain_id=GNOSIS_CHAIN_ID,
+        )
+
+        if response_msg.performative != ContractApiMessage.Performative.RAW_TRANSACTION:
+            self.context.logger.error(
+                f"Could not get resolve bet hash. "
+                f"Expected: {ContractApiMessage.Performative.RAW_TRANSACTION.value}, "
+                f"Actual: {response_msg.performative.value}"
+            )
+            return None
+
+        self.context.logger.info(f"Resolve bet response msg is {response_msg}")
+        tx_data = cast(str, response_msg.raw_transaction.body.get("data"))
+        self.context.logger.info(f"Resolve bet tx data is {tx_data}")
+
+        if not tx_data:
+            self.context.logger.error("No transaction data received")
+            return None
+
+        return {
+            "operation": MultiSendOperation.CALL,
+            "to": self.params.betchain_contract_address,
+            "value": 0,
+            "data": tx_data if isinstance(tx_data, bytes) else bytes.fromhex(tx_data[2:] if tx_data.startswith("0x") else tx_data),
+        }
 
     def get_tx_hash(self) -> Generator[None, None, Optional[str]]:
         """Get the transaction hash for resolving the bet"""
@@ -548,42 +702,39 @@ class TxPreparationBehaviour(
         return data_hex
 
     def get_multisend_safe_tx_hash(self) -> Generator[None, None, Optional[str]]:
-        """Get a multisend transaction hash"""
-        # Step 1: we prepare a list of transactions
-        # Step 2: we pack all the transactions in a single one using the mulstisend contract
-        # Step 3: we wrap the multisend call inside a Safe call, as always
-
+        """Get a multisend transaction hash for resolve bet and native transfer"""
         multi_send_txs = []
 
-        # Native transfer
-        native_transfer_data = self.get_native_transfer_data()
-        multi_send_txs.append(
-            {
-                "operation": MultiSendOperation.CALL,
-                "to": self.params.transfer_target_address,
-                "value": native_transfer_data[VALUE_KEY],
-                # No data key in this transaction, since it is a native transfer
-            }
-        )
-
-        # ERC20 transfer
-        erc20_transfer_data_hex = yield from self.get_erc20_transfer_data()
-
-        if erc20_transfer_data_hex is None:
+        # Get resolve bet transaction data
+        resolve_bet_data_hex = yield from self.get_resolve_bet_data()
+        if resolve_bet_data_hex is None:
+            self.context.logger.error("Could not get resolve bet transaction data")
             return None
 
-        multi_send_txs.append(
-            {
-                "operation": MultiSendOperation.CALL,
-                "to": self.params.olas_token_address,
-                "value": ZERO_VALUE,
-                "data": bytes.fromhex(erc20_transfer_data_hex),
-            }
-        )
+        # Add resolve bet transaction
+        multi_send_txs.append({
+            "operation": MultiSendOperation.CALL,
+            "to": self.params.betchain_contract_address,
+            "value": ZERO_VALUE,
+            "data": bytes.fromhex(resolve_bet_data_hex),
+        })
 
-        # Multisend call
+        # Get winner prize transfer hash
+        winner_tx_hash = yield from self.get_winner_transfer_tx_hash()
+        if winner_tx_hash is not None:
+            bet_details = yield from self.get_bet_details_from_ipfs()
+            if bet_details:
+                # Add winner prize transfer transaction
+                multi_send_txs.append({
+                    "operation": MultiSendOperation.CALL,
+                    "to": bet_details[2],  # winner address
+                    "value": int(self.synchronized_data.prize_amount),
+                    "data": EMPTY_CALL_DATA,
+                })
+
+        # Prepare multisend transaction
         contract_api_msg = yield from self.get_contract_api_response(
-            performative=ContractApiMessage.Performative.GET_RAW_TRANSACTION,  # type: ignore
+            performative=ContractApiMessage.Performative.GET_RAW_TRANSACTION,
             contract_address=self.params.multisend_address,
             contract_id=str(MultiSendContract.contract_id),
             contract_callable="get_tx_data",
@@ -591,11 +742,7 @@ class TxPreparationBehaviour(
             chain_id=GNOSIS_CHAIN_ID,
         )
 
-        # Check for errors
-        if (
-            contract_api_msg.performative
-            != ContractApiMessage.Performative.RAW_TRANSACTION
-        ):
+        if contract_api_msg.performative != ContractApiMessage.Performative.RAW_TRANSACTION:
             self.context.logger.error(
                 f"Could not get Multisend tx hash. "
                 f"Expected: {ContractApiMessage.Performative.RAW_TRANSACTION.value}, "
@@ -603,16 +750,16 @@ class TxPreparationBehaviour(
             )
             return None
 
-        # Extract the multisend data and strip the 0x
+        # Extract multisend data and strip 0x prefix
         multisend_data = cast(str, contract_api_msg.raw_transaction.body["data"])[2:]
         self.context.logger.info(f"Multisend data is {multisend_data}")
 
-        # Prepare the Safe transaction
+        # Prepare Safe transaction using multisend
         safe_tx_hash = yield from self._build_safe_tx_hash(
             to_address=self.params.multisend_address,
-            value=ZERO_VALUE,  # the safe is not moving any native value into the multisend
+            value=ZERO_VALUE,
             data=bytes.fromhex(multisend_data),
-            operation=SafeOperation.DELEGATE_CALL.value,  # we are delegating the call to the multisend contract
+            operation=SafeOperation.DELEGATE_CALL.value,
         )
         return safe_tx_hash
 
@@ -623,15 +770,13 @@ class TxPreparationBehaviour(
         data: bytes = EMPTY_CALL_DATA,
         operation: int = SafeOperation.CALL.value,
     ) -> Generator[None, None, Optional[str]]:
-        """Prepares and returns the safe tx hash for a multisend tx."""
+        """Build safe transaction hash."""
+        
+        self.context.logger.info(f"Building Safe tx hash for {to_address}")
 
-        self.context.logger.info(
-            f"Preparing Safe transaction [{self.synchronized_data.safe_contract_address}]"
-        )
-
-        # Prepare the safe transaction
+        # Get safe transaction hash from contract
         response_msg = yield from self.get_contract_api_response(
-            performative=ContractApiMessage.Performative.GET_STATE,  # type: ignore
+            performative=ContractApiMessage.Performative.GET_STATE,
             contract_address=self.synchronized_data.safe_contract_address,
             contract_id=str(GnosisSafeContract.contract_id),
             contract_callable="get_raw_safe_transaction_hash",
@@ -643,40 +788,53 @@ class TxPreparationBehaviour(
             operation=operation,
         )
 
-        # Check for errors
         if response_msg.performative != ContractApiMessage.Performative.STATE:
-            self.context.logger.error(
-                "Couldn't get safe tx hash. Expected response performative "
-                f"{ContractApiMessage.Performative.STATE.value!r}, "  # type: ignore
-                f"received {response_msg.performative.value!r}: {response_msg}."
-            )
+            self.context.logger.error(f"Invalid response: {response_msg}")
             return None
 
-        # Extract the hash and check it has the correct length
-        tx_hash: Optional[str] = response_msg.state.body.get("tx_hash", None)
-
-        if tx_hash is None or len(tx_hash) != TX_HASH_LENGTH:
-            self.context.logger.error(
-                "Something went wrong while trying to get the safe transaction hash. "
-                f"Invalid hash {tx_hash!r} was returned."
-            )
+        # Get hash from response
+        safe_tx_hash = response_msg.state.body.get("tx_hash")
+        self.context.logger.info(f"Raw safe_tx_hash: {safe_tx_hash}")
+        
+        if not safe_tx_hash:
+            self.context.logger.error("No tx hash in response")
             return None
 
-        # Transaction to hex
-        tx_hash = tx_hash[2:]  # strip the 0x
+        try:
+            # Convert to bytes ensuring exactly 32 bytes
+            if isinstance(safe_tx_hash, str):
+                # Remove 0x prefix if present
+                if safe_tx_hash.startswith("0x"):
+                    safe_tx_hash = safe_tx_hash[2:]
+                # Convert hex string to bytes
+                safe_tx_hash_bytes = bytes.fromhex(safe_tx_hash.zfill(64))  # Ensure 32 bytes (64 hex chars)
+            elif isinstance(safe_tx_hash, bytes):
+                safe_tx_hash_bytes = safe_tx_hash.rjust(32, b'\0')
+            else:
+                self.context.logger.error(f"Unexpected safe_tx_hash type: {type(safe_tx_hash)}")
+                return None
 
-        safe_tx_hash = hash_payload_to_hex(
-            safe_tx_hash=tx_hash,
-            ether_value=value,
-            safe_tx_gas=SAFE_GAS,
-            to_address=to_address,
-            data=data,
-            operation=operation,
-        )
+            self.context.logger.info(f"Processed safe_tx_hash length: {len(safe_tx_hash_bytes)} bytes")
+            self.context.logger.info(f"Processed safe_tx_hash hex: {safe_tx_hash_bytes.hex()}")
 
-        self.context.logger.info(f"Safe transaction hash is {safe_tx_hash}")
+            # Convert data to hex string for hashing
+            data_hex = data.hex() if isinstance(data, bytes) else ""
 
-        return safe_tx_hash
+            # Generate final hash
+            tx_hash = hash_payload_to_hex(
+                safe_tx_hash=safe_tx_hash_bytes,
+                ether_value=value,
+                safe_tx_gas=SAFE_GAS,
+                to_address=to_address,
+                data=data_hex,
+                operation=operation,
+            )
+            self.context.logger.info(f"Generated tx hash: {tx_hash}")
+            return tx_hash
+            
+        except (ValueError, AttributeError) as e:
+            self.context.logger.error(f"Failed to process safe_tx_hash: {e}")
+            return None
 
     def get_resolve_bet_data(self) -> Generator[None, None, Optional[str]]:
         """Get the resolve bet transaction data"""
@@ -718,8 +876,43 @@ class TxPreparationBehaviour(
         data_hex = data_bytes.hex()
         self.context.logger.info(f"Resolve bet data is {data_hex}")
         return data_hex
+    
+    def get_winner_transfer_tx_hash(self) -> Generator[None, None, Optional[str]]:
+        """Get transaction hash for transferring prize to winner"""
+        try:
+            prize_amount = int(self.synchronized_data.prize_amount)
+            if prize_amount < 0:
+                self.context.logger.error("Invalid prize amount")
+                return None
+        except (ValueError, TypeError):
+            self.context.logger.error("Failed to parse prize amount")
+            return None
 
+        bet_details = yield from self.get_bet_details_from_ipfs()
+        
+        if not bet_details or prize_amount <= 0:
+            self.context.logger.error("No prize amount or bet details available")
+            return None
+            
+        # Get winner address from bet details
+        winner_address = bet_details[2] if len(bet_details) > 2 else None
+        if not winner_address:
+            self.context.logger.error("No winner address found in bet details")
+            return None
 
+        # Prepare safe transaction for prize transfer
+        safe_tx_hash = yield from self._build_safe_tx_hash(
+            to_address=winner_address,
+            value=prize_amount,
+            data=EMPTY_CALL_DATA
+        )
+        
+        self.context.logger.info(
+            f"Prize transfer hash: {safe_tx_hash}, "
+            f"Amount: {prize_amount}, "
+            f"To: {winner_address}"
+        )
+        return safe_tx_hash
 class LearningRoundBehaviour(AbstractRoundBehaviour):
     """LearningRoundBehaviour"""
 

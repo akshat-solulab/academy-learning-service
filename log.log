@@ -1,0 +1,206 @@
+Running the aea with aea, version 1.57.0
+Checking keys
+Checking to see if /agent_key/ethereum_private_key.txt exists
+AEA key provided. Copying to agent.
+ethereum key provided. Adding to agent.
+Checking to see if /agent_key/cosmos_private_key.txt exists
+Checking to see if /agent_key/solana_private_key.txt exists
+Checking autonomy specific connection keys
+Generating cosmos key for libp2p connection
+Generating key cosmos without a password!
+Issuing certificates without password
+Issuing certificate 'acn' for connection valory/p2p_libp2p_client:0.1.0:bafybeid3xg5k2ol5adflqloy75ibgljmol6xsvzvezebsg7oudxeeolz7e...
+Generated signature: '307832396133653066653366356366366135653964363466303036303839343534636134383734633633313236316139333137383939373134623639663766313935376465656232313564613337656261616236356236306432326538343334346438623031333565333962373236396636623934386531393232353838613864643163'
+Dumped certificate 'acn' in '/root/agent/.certs/acn_cosmos_11000.txt' for connection valory/p2p_libp2p_client:0.1.0:bafybeid3xg5k2ol5adflqloy75ibgljmol6xsvzvezebsg7oudxeeolz7e.
+All certificates have been issued.
+Running the aea
+[2024-12-08 14:56:18,374] [WARNING] [agent] The kwargs={'multisend_batch_size': 5, 'ipfs_address': 'https://gateway.autonolas.tech/ipfs/', 'service_endpoint_base': 'https://learning.autonolas.tech/', 'coingecko_api_key': 'CG-5A7hekdDLJBEgJshXRfzbHXV', 'default_chain_id': 'gnosis'} passed to params have not been set!
+    _     _____     _    
+   / \   | ____|   / \   
+  / _ \  |  _|    / _ \  
+ / ___ \ | |___  / ___ \ 
+/_/   \_\|_____|/_/   \_\
+                         
+v1.57.0
+
+All available packages.
+================================================================================================================================================================================
+| Package                                                                                                        | IPFSHash                                                    |
+================================================================================================================================================================================
+| (protocol, open_aea/signing:1.0.0:bafybeihv62fim3wl2bayavfcg3u5e5cxu3b7brtu4cn5xoxd6lqwachasi)                 | bafybeihv62fim3wl2bayavfcg3u5e5cxu3b7brtu4cn5xoxd6lqwachasi |
+| (protocol, valory/ledger_api:1.0.0:bafybeihdk6psr4guxmbcrc26jr2cbgzpd5aljkqvpwo64bvaz7tdti2oni)                | bafybeihdk6psr4guxmbcrc26jr2cbgzpd5aljkqvpwo64bvaz7tdti2oni |
+| (protocol, valory/abci:0.1.0:bafybeiaqmp7kocbfdboksayeqhkbrynvlfzsx4uy4x6nohywnmaig4an7u)                      | bafybeiaqmp7kocbfdboksayeqhkbrynvlfzsx4uy4x6nohywnmaig4an7u |
+| (protocol, valory/tendermint:0.1.0:bafybeig4mi3vmlv5zpbjbfuzcgida6j5f2nhrpedxicmrrfjweqc5r7cra)                | bafybeig4mi3vmlv5zpbjbfuzcgida6j5f2nhrpedxicmrrfjweqc5r7cra |
+| (protocol, valory/acn:1.1.0:bafybeidluaoeakae3exseupaea4i3yvvk5vivyt227xshjlffywwxzcxqe)                       | bafybeidluaoeakae3exseupaea4i3yvvk5vivyt227xshjlffywwxzcxqe |
+| (protocol, valory/ipfs:0.1.0:bafybeiftxi2qhreewgsc5wevogi7yc5g6hbcbo4uiuaibauhv3nhfcdtvm)                      | bafybeiftxi2qhreewgsc5wevogi7yc5g6hbcbo4uiuaibauhv3nhfcdtvm |
+| (protocol, valory/http:1.0.0:bafybeifugzl63kfdmwrxwphrnrhj7bn6iruxieme3a4ntzejf6kmtuwmae)                      | bafybeifugzl63kfdmwrxwphrnrhj7bn6iruxieme3a4ntzejf6kmtuwmae |
+| (protocol, valory/contract_api:1.0.0:bafybeidgu7o5llh26xp3u3ebq3yluull5lupiyeu6iooi2xyymdrgnzq5i)              | bafybeidgu7o5llh26xp3u3ebq3yluull5lupiyeu6iooi2xyymdrgnzq5i |
+| (connection, valory/http_server:0.22.0:bafybeihpgu56ovmq4npazdbh6y6ru5i7zuv6wvdglpxavsckyih56smu7m)            | bafybeihpgu56ovmq4npazdbh6y6ru5i7zuv6wvdglpxavsckyih56smu7m |
+| (connection, valory/p2p_libp2p_client:0.1.0:bafybeid3xg5k2ol5adflqloy75ibgljmol6xsvzvezebsg7oudxeeolz7e)       | bafybeid3xg5k2ol5adflqloy75ibgljmol6xsvzvezebsg7oudxeeolz7e |
+| (connection, valory/abci:0.1.0:bafybeiejymu4ul62zx6weoibnlsrfprfpjnplhjefz6sr6izgdr4sajlnu)                    | bafybeiejymu4ul62zx6weoibnlsrfprfpjnplhjefz6sr6izgdr4sajlnu |
+| (connection, valory/ipfs:0.1.0:bafybeiegnapkvkamis47v5ioza2haerrjdzzb23rptpmcydyneas7jc2wm)                    | bafybeiegnapkvkamis47v5ioza2haerrjdzzb23rptpmcydyneas7jc2wm |
+| (connection, valory/ledger:0.19.0:bafybeigntoericenpzvwejqfuc3kqzo2pscs76qoygg5dbj6f4zxusru5e)                 | bafybeigntoericenpzvwejqfuc3kqzo2pscs76qoygg5dbj6f4zxusru5e |
+| (connection, valory/http_client:0.23.0:bafybeihi772xgzpqeipp3fhmvpct4y6e6tpjp4sogwqrnf3wqspgeilg4u)            | bafybeihi772xgzpqeipp3fhmvpct4y6e6tpjp4sogwqrnf3wqspgeilg4u |
+| (contract, valory/service_registry:0.1.0:bafybeihafe524ilngwzavkhwz4er56p7nyar26lfm7lrksfiqvvzo3kdcq)          | bafybeihafe524ilngwzavkhwz4er56p7nyar26lfm7lrksfiqvvzo3kdcq |
+| (contract, valory/betchain:0.1.0:bafybeih3uzvzt2mza6psbdxkkavblrf6klzbeymjaifk4z5n5jtv63y7km)                  | bafybeih3uzvzt2mza6psbdxkkavblrf6klzbeymjaifk4z5n5jtv63y7km |
+| (contract, valory/gnosis_safe:0.1.0:bafybeib375xmvcplw7ageic2np3hq4yqeijrvd5kl7rrdnyvswats6ngmm)               | bafybeib375xmvcplw7ageic2np3hq4yqeijrvd5kl7rrdnyvswats6ngmm |
+| (contract, valory/gnosis_safe_proxy_factory:0.1.0:bafybeicpcpyurm7gxir2gnlsgzeirzomkhcbnzr5txk67zdf4mmg737rtu) | bafybeicpcpyurm7gxir2gnlsgzeirzomkhcbnzr5txk67zdf4mmg737rtu |
+| (contract, valory/erc20:0.1.0:bafybeibyhuxozkkvsymqz45vxixr3w3bs4vsvxg2nsx5jlyi3f3hhn7ezi)                     | bafybeibyhuxozkkvsymqz45vxixr3w3bs4vsvxg2nsx5jlyi3f3hhn7ezi |
+| (contract, valory/multisend:0.1.0:bafybeig5byt5urg2d2bsecufxe5ql7f4mezg3mekfleeh32nmuusx66p4y)                 | bafybeig5byt5urg2d2bsecufxe5ql7f4mezg3mekfleeh32nmuusx66p4y |
+| (skill, valory/abstract_abci:0.1.0:bafybeidz54kvxhbdmpruzguuzzq7bjg4pekjb5amqobkxoy4oqknnobopu)                | bafybeidz54kvxhbdmpruzguuzzq7bjg4pekjb5amqobkxoy4oqknnobopu |
+| (skill, valory/transaction_settlement_abci:0.1.0:bafybeielv6eivt2z6nforq43xewl2vmpfwpdu2s2vfogobziljnwsclmlm)  | bafybeielv6eivt2z6nforq43xewl2vmpfwpdu2s2vfogobziljnwsclmlm |
+| (skill, valory/termination_abci:0.1.0:bafybeiekkpo5qef5zaeagm3si6v45qxcojvtjqe4a5ceccvk4q7k3xi3bi)             | bafybeiekkpo5qef5zaeagm3si6v45qxcojvtjqe4a5ceccvk4q7k3xi3bi |
+| (skill, valory/registration_abci:0.1.0:bafybeiffipsowrqrkhjoexem7ern5ob4fabgif7wa6gtlszcoaop2e3oey)            | bafybeiffipsowrqrkhjoexem7ern5ob4fabgif7wa6gtlszcoaop2e3oey |
+| (skill, valory/reset_pause_abci:0.1.0:bafybeif4lgvbzsmzljesxbphycdv52ka7qnihyjrjpfaseclxadcmm6yiq)             | bafybeif4lgvbzsmzljesxbphycdv52ka7qnihyjrjpfaseclxadcmm6yiq |
+| (skill, valory/learning_abci:0.1.0:bafybeicbtoelm2t7pyhfh3rmwbihh2mux7aluej2s6oydghxmx6sjngcdq)                | bafybeicbtoelm2t7pyhfh3rmwbihh2mux7aluej2s6oydghxmx6sjngcdq |
+| (skill, valory/abstract_round_abci:0.1.0:bafybeiajjzuh6vf23crp55humonknirvv2f4s3dmdlfzch6tc5ow52pcgm)          | bafybeiajjzuh6vf23crp55humonknirvv2f4s3dmdlfzch6tc5ow52pcgm |
+| (skill, valory/learning_chained_abci:0.1.0:bafybeiaitmhbounfxh37agdt7xcbcnkgg2qon2ats7aw2a2awe4feuixda)        | bafybeiaitmhbounfxh37agdt7xcbcnkgg2qon2ats7aw2a2awe4feuixda |
+================================================================================================================================================================================
+
+All instantiated components
+======================================================
+| ComponentId                                        |
+======================================================
+| (protocol, open_aea/signing:1.0.0)                 |
+| (protocol, valory/ledger_api:1.0.0)                |
+| (protocol, valory/abci:0.1.0)                      |
+| (protocol, valory/tendermint:0.1.0)                |
+| (protocol, valory/acn:1.1.0)                       |
+| (protocol, valory/ipfs:0.1.0)                      |
+| (protocol, valory/http:1.0.0)                      |
+| (protocol, valory/contract_api:1.0.0)              |
+| (connection, valory/abci:0.1.0)                    |
+| (connection, valory/http_client:0.23.0)            |
+| (connection, valory/http_server:0.22.0)            |
+| (connection, valory/ipfs:0.1.0)                    |
+| (connection, valory/ledger:0.19.0)                 |
+| (connection, valory/p2p_libp2p_client:0.1.0)       |
+| (contract, valory/betchain:0.1.0)                  |
+| (contract, valory/erc20:0.1.0)                     |
+| (contract, valory/gnosis_safe_proxy_factory:0.1.0) |
+| (contract, valory/gnosis_safe:0.1.0)               |
+| (contract, valory/multisend:0.1.0)                 |
+| (contract, valory/service_registry:0.1.0)          |
+| (skill, valory/learning_chained_abci:0.1.0)        |
+======================================================
+
+All available addresses.
+=========================================================
+| Name     | Address                                    |
+=========================================================
+| ethereum | 0xB953D600d33409a20eE7D703f6D098d8a1F1aa25 |
+=========================================================
+
+Starting AEA 'agent' in 'async' mode...
+[2024-12-08 14:56:18,472] [INFO] [agent] HTTP Server has connected to port: 8000.
+[2024-12-08 14:56:18,953] [INFO] [agent] Connecting to libp2p node acn.autonolas.tech:9005. Attempt 1
+[2024-12-08 14:56:23,238] [INFO] [agent] Successfully connected to libp2p node acn.autonolas.tech:9005
+[2024-12-08 14:56:23,240] [INFO] [agent] Entered in the 'registration_startup_round' round for period 0
+[2024-12-08 14:56:23,241] [INFO] [agent] Start processing messages...
+[2024-12-08 14:56:23,243] [INFO] [agent] Entered in the 'registration_startup_behaviour' behaviour
+[2024-12-08 14:56:23,244] [INFO] [agent] Synchronizing with Tendermint...
+[2024-12-08 14:56:26,256] [INFO] [agent] local height == remote == 2; Synchronization complete.
+[2024-12-08 14:56:26,258] [INFO] [agent] Sharing Tendermint config on start-up?: False
+[2024-12-08 14:56:28,742] [WARNING] [agent] Slashing has not been enabled!
+[2024-12-08 14:56:28,743] [INFO] [agent] 'registration_startup_round' round is done with event: Event.DONE
+[2024-12-08 14:56:28,743] [INFO] [agent] Entered in the 'data_pull_round' round for period 0
+[2024-12-08 14:56:28,745] [INFO] [agent] Entered in the 'data_pull_behaviour' behaviour
+[2024-12-08 14:56:28,745] [INFO] [agent] Getting total bets from contract 0x8209b8E7C2585D3Ac6F7DfEE462b6f166B71e1bE
+[2024-12-08 14:56:29,633] [INFO] [agent] Total bets: 3
+[2024-12-08 14:56:29,633] [INFO] [agent] Total bets: 3
+[2024-12-08 14:56:29,633] [INFO] [agent] Getting resolved bets from contract 0x8209b8E7C2585D3Ac6F7DfEE462b6f166B71e1bE
+[2024-12-08 14:56:30,612] [INFO] [agent] Resolved bets: 2
+[2024-12-08 14:56:30,612] [INFO] [agent] Resolved bets: 2
+[2024-12-08 14:56:30,612] [INFO] [agent] First pending bet: 3
+[2024-12-08 14:56:30,612] [INFO] [agent] Getting bet details for bet ID 3 from contract 0x8209b8E7C2585D3Ac6F7DfEE462b6f166B71e1bE
+[2024-12-08 14:56:31,533] [INFO] [agent] Bet details for bet ID 3: ['0xB953D600d33409a20eE7D703f6D098d8a1F1aa25', 1, 3329, False, 0]
+[2024-12-08 14:56:32,353] [INFO] [agent] Successfully stored /tmp/tmpqv4kopzu/metadata.json to IPFS with hash: QmYeD8rDATJjG8t3RdxDfSf3pmfsDnF7Ju99vjbmAJuaxG
+[2024-12-08 14:56:32,353] [INFO] [agent] Bet details stored in IPFS: https://gateway.autonolas.tech/ipfs/QmYeD8rDATJjG8t3RdxDfSf3pmfsDnF7Ju99vjbmAJuaxG
+[2024-12-08 14:56:35,294] [INFO] [agent] 'data_pull_round' round is done with event: Event.DONE
+[2024-12-08 14:56:35,294] [INFO] [agent] Entered in the 'decision_making_round' round for period 0
+[2024-12-08 14:56:35,295] [INFO] [agent] Entered in the 'decision_making_behaviour' behaviour
+[2024-12-08 14:56:35,928] [INFO] [agent] Retrieved 1 objects from ipfs.
+[2024-12-08 14:56:35,928] [INFO] [agent] User chose base, actual winner was base, result is win, prize amount is 1537 wei
+[2024-12-08 14:56:36,606] [INFO] [agent] 'decision_making_round' round is done with event: Event.TRANSACT
+[2024-12-08 14:56:36,607] [INFO] [agent] Entered in the 'tx_preparation_round' round for period 0
+[2024-12-08 14:56:36,608] [INFO] [agent] Entered in the 'tx_preparation_behaviour' behaviour
+[2024-12-08 14:56:36,608] [INFO] [agent] Preparing prize transfer transaction
+[2024-12-08 14:56:37,260] [INFO] [agent] Retrieved 1 objects from ipfs.
+[2024-12-08 14:56:39,486] [INFO] [agent] Prize transfer response msg is Message(sender=valory/ledger:0.19.0,to=valory/learning_chained_abci:0.1.0,dialogue_reference=('943cb49f529a661285cfdabcd21669a8015e43321183862a816a0b21f1d1b1aa', '229c5dcd7cb99947388a1e399b7e4ccf4b9e371ee8acc33f40ff0427268a3568'),message_id=-1,performative=raw_transaction,raw_transaction=RawTransaction: ledger_id=ethereum, body={'tx_hash': '0xb292775b607766e1287d41af1ea7243dfc8282b06efb0bdfaaa6061326034977'},target=1)
+[2024-12-08 14:56:39,486] [INFO] [agent] Prize transfer hash data is 0xb292775b607766e1287d41af1ea7243dfc8282b06efb0bdfaaa6061326034977
+[2024-12-08 14:56:39,486] [INFO] [agent] Preparing bet resolution transaction
+[2024-12-08 14:56:39,496] [INFO] [agent] Resolve bet response msg is Message(sender=valory/ledger:0.19.0,to=valory/learning_chained_abci:0.1.0,dialogue_reference=('e5a3901aedea7b3c775e084d82c9f70c30ce408923664d7e1ffe99e4ab9f9ed5', '93a995d5825d9d57cb2c6f6516957b39478262dcffe2d9ddb6f47dfd1112037e'),message_id=-1,performative=raw_transaction,raw_transaction=RawTransaction: ledger_id=ethereum, body={'data': b'? q\\\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x03\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00`\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00.QmYeD8rDATJjG8t3RdxDfSf3pmfsDnF7Ju99v,target=1)
+[2024-12-08 14:56:39,496] [INFO] [agent] Resolve bet tx data is b'? q\\\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x03\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00`\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00.QmYeD8rDATJjG8t3RdxDfSf3pmfsDnF7Ju99vjbmAJuaxG\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+[2024-12-08 14:56:39,864] [INFO] [agent] Building Safe tx hash for 0xA238CBeb142c10Ef7Ad8442C6D1f9E89e07e7761
+[2024-12-08 14:56:41,930] [INFO] [agent] Raw safe_tx_hash: 0xd075d6ea848152bdc86e1effe06ede018f6019b63ce20e8728af93a60fdea3c1
+[2024-12-08 14:56:41,930] [INFO] [agent] Processed safe_tx_hash length: 32 bytes
+[2024-12-08 14:56:41,930] [INFO] [agent] Processed safe_tx_hash hex: d075d6ea848152bdc86e1effe06ede018f6019b63ce20e8728af93a60fdea3c1
+[2024-12-08 14:56:41,930] [ERROR] [agent] Failed to process safe_tx_hash: cannot encode safe_tx_hash of non-32 bytes
+[2024-12-08 14:56:41,930] [ERROR] [agent] Failed to build safe tx hash
+[2024-12-08 14:56:41,932] [INFO] [agent] Preparing prize transfer transaction
+[2024-12-08 14:56:42,482] [INFO] [agent] Retrieved 1 objects from ipfs.
+[2024-12-08 14:56:44,579] [INFO] [agent] Prize transfer response msg is Message(sender=valory/ledger:0.19.0,to=valory/learning_chained_abci:0.1.0,dialogue_reference=('8279947002c1d2ed128a6e9045ad89287f191fe0b1a7878dfd1fd09df2677fbe', 'e9d6e6864d849dcc164781248bff2481a41e8c54728d011fc04c8814335712d4'),message_id=-1,performative=raw_transaction,raw_transaction=RawTransaction: ledger_id=ethereum, body={'tx_hash': '0xb292775b607766e1287d41af1ea7243dfc8282b06efb0bdfaaa6061326034977'},target=1)
+[2024-12-08 14:56:44,579] [INFO] [agent] Prize transfer hash data is 0xb292775b607766e1287d41af1ea7243dfc8282b06efb0bdfaaa6061326034977
+[2024-12-08 14:56:44,579] [INFO] [agent] Preparing bet resolution transaction
+[2024-12-08 14:56:44,592] [INFO] [agent] Resolve bet response msg is Message(sender=valory/ledger:0.19.0,to=valory/learning_chained_abci:0.1.0,dialogue_reference=('973e54443154dff6bea6b895e9a4df0a250ce2848602bba68b62eb9eadbf9cc9', '0f74caafd559a27494302c7c73448c717f067ad92f9f20054f4b0b7ede58c0ab'),message_id=-1,performative=raw_transaction,raw_transaction=RawTransaction: ledger_id=ethereum, body={'data': b'? q\\\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x03\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00`\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00.QmYeD8rDATJjG8t3RdxDfSf3pmfsDnF7Ju99v,target=1)
+[2024-12-08 14:56:44,592] [INFO] [agent] Resolve bet tx data is b'? q\\\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x03\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00`\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00.QmYeD8rDATJjG8t3RdxDfSf3pmfsDnF7Ju99vjbmAJuaxG\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+[2024-12-08 14:56:45,038] [INFO] [agent] Building Safe tx hash for 0xA238CBeb142c10Ef7Ad8442C6D1f9E89e07e7761
+[2024-12-08 14:56:47,243] [INFO] [agent] Raw safe_tx_hash: 0xd075d6ea848152bdc86e1effe06ede018f6019b63ce20e8728af93a60fdea3c1
+[2024-12-08 14:56:47,243] [INFO] [agent] Processed safe_tx_hash length: 32 bytes
+[2024-12-08 14:56:47,243] [INFO] [agent] Processed safe_tx_hash hex: d075d6ea848152bdc86e1effe06ede018f6019b63ce20e8728af93a60fdea3c1
+[2024-12-08 14:56:47,243] [ERROR] [agent] Failed to process safe_tx_hash: cannot encode safe_tx_hash of non-32 bytes
+[2024-12-08 14:56:47,243] [ERROR] [agent] Failed to build safe tx hash
+[2024-12-08 14:56:47,245] [INFO] [agent] Preparing prize transfer transaction
+[2024-12-08 14:56:47,908] [INFO] [agent] Retrieved 1 objects from ipfs.
+[2024-12-08 14:56:50,164] [INFO] [agent] Prize transfer response msg is Message(sender=valory/ledger:0.19.0,to=valory/learning_chained_abci:0.1.0,dialogue_reference=('8c6fc04fc002dbb105b8bd9ecce13971c9bb81cc97d589e41dd57b425df45be3', '77c0877366f567c6e5dff1916ba90a449bf1e11acc9d42aa454a96288c3aca4c'),message_id=-1,performative=raw_transaction,raw_transaction=RawTransaction: ledger_id=ethereum, body={'tx_hash': '0xb292775b607766e1287d41af1ea7243dfc8282b06efb0bdfaaa6061326034977'},target=1)
+[2024-12-08 14:56:50,164] [INFO] [agent] Prize transfer hash data is 0xb292775b607766e1287d41af1ea7243dfc8282b06efb0bdfaaa6061326034977
+[2024-12-08 14:56:50,164] [INFO] [agent] Preparing bet resolution transaction
+[2024-12-08 14:56:50,175] [INFO] [agent] Resolve bet response msg is Message(sender=valory/ledger:0.19.0,to=valory/learning_chained_abci:0.1.0,dialogue_reference=('c1834a842a139dd33cfc32b6fd8ccb7c1882e01578abdb8abf894d5279bed306', '2c79a50cbf6560456b4bd341f6fb82ac28caba5a62ab1ea922b76900d3e1910d'),message_id=-1,performative=raw_transaction,raw_transaction=RawTransaction: ledger_id=ethereum, body={'data': b'? q\\\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x03\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00`\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00.QmYeD8rDATJjG8t3RdxDfSf3pmfsDnF7Ju99v,target=1)
+[2024-12-08 14:56:50,175] [INFO] [agent] Resolve bet tx data is b'? q\\\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x03\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00`\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00.QmYeD8rDATJjG8t3RdxDfSf3pmfsDnF7Ju99vjbmAJuaxG\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+[2024-12-08 14:56:50,550] [INFO] [agent] Building Safe tx hash for 0xA238CBeb142c10Ef7Ad8442C6D1f9E89e07e7761
+[2024-12-08 14:56:52,821] [INFO] [agent] Raw safe_tx_hash: 0xd075d6ea848152bdc86e1effe06ede018f6019b63ce20e8728af93a60fdea3c1
+[2024-12-08 14:56:52,821] [INFO] [agent] Processed safe_tx_hash length: 32 bytes
+[2024-12-08 14:56:52,821] [INFO] [agent] Processed safe_tx_hash hex: d075d6ea848152bdc86e1effe06ede018f6019b63ce20e8728af93a60fdea3c1
+[2024-12-08 14:56:52,821] [ERROR] [agent] Failed to process safe_tx_hash: cannot encode safe_tx_hash of non-32 bytes
+[2024-12-08 14:56:52,821] [ERROR] [agent] Failed to build safe tx hash
+[2024-12-08 14:56:52,822] [INFO] [agent] Preparing prize transfer transaction
+[2024-12-08 14:56:53,324] [INFO] [agent] Retrieved 1 objects from ipfs.
+[2024-12-08 14:56:55,411] [INFO] [agent] Prize transfer response msg is Message(sender=valory/ledger:0.19.0,to=valory/learning_chained_abci:0.1.0,dialogue_reference=('ba38f3013c51756541c8ef81497d3bed2b9a45a9d4715b5cc30e8252234699fd', '7b37bf3f5d1cf418e79018c4eaec23af657d3506ea9ad8299f898ce81bf6c243'),message_id=-1,performative=raw_transaction,raw_transaction=RawTransaction: ledger_id=ethereum, body={'tx_hash': '0xb292775b607766e1287d41af1ea7243dfc8282b06efb0bdfaaa6061326034977'},target=1)
+[2024-12-08 14:56:55,411] [INFO] [agent] Prize transfer hash data is 0xb292775b607766e1287d41af1ea7243dfc8282b06efb0bdfaaa6061326034977
+[2024-12-08 14:56:55,411] [INFO] [agent] Preparing bet resolution transaction
+[2024-12-08 14:56:55,423] [INFO] [agent] Resolve bet response msg is Message(sender=valory/ledger:0.19.0,to=valory/learning_chained_abci:0.1.0,dialogue_reference=('ef94e68510ad351f53bede14d36536277c3de05cf1fbd6f45b5e5d5e4a234d84', '28c004314d1864d75cdffe370c7d1c3cc0638b083ee5fb935536c926ec983246'),message_id=-1,performative=raw_transaction,raw_transaction=RawTransaction: ledger_id=ethereum, body={'data': b'? q\\\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x03\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00`\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00.QmYeD8rDATJjG8t3RdxDfSf3pmfsDnF7Ju99v,target=1)
+[2024-12-08 14:56:55,423] [INFO] [agent] Resolve bet tx data is b'? q\\\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x03\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00`\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00.QmYeD8rDATJjG8t3RdxDfSf3pmfsDnF7Ju99vjbmAJuaxG\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+[2024-12-08 14:56:55,904] [INFO] [agent] Building Safe tx hash for 0xA238CBeb142c10Ef7Ad8442C6D1f9E89e07e7761
+[2024-12-08 14:56:58,104] [INFO] [agent] Raw safe_tx_hash: 0xd075d6ea848152bdc86e1effe06ede018f6019b63ce20e8728af93a60fdea3c1
+[2024-12-08 14:56:58,104] [INFO] [agent] Processed safe_tx_hash length: 32 bytes
+[2024-12-08 14:56:58,104] [INFO] [agent] Processed safe_tx_hash hex: d075d6ea848152bdc86e1effe06ede018f6019b63ce20e8728af93a60fdea3c1
+[2024-12-08 14:56:58,104] [ERROR] [agent] Failed to process safe_tx_hash: cannot encode safe_tx_hash of non-32 bytes
+[2024-12-08 14:56:58,104] [ERROR] [agent] Failed to build safe tx hash
+[2024-12-08 14:56:58,106] [INFO] [agent] Preparing prize transfer transaction
+[2024-12-08 14:56:58,665] [INFO] [agent] Retrieved 1 objects from ipfs.
+[2024-12-08 14:57:00,706] [INFO] [agent] Prize transfer response msg is Message(sender=valory/ledger:0.19.0,to=valory/learning_chained_abci:0.1.0,dialogue_reference=('dfcc05b9bffd09fb2bbeeb09519703995fc2708e0f24f1f8550c1c76718d8a4c', '7b28d5438c684bc6dc30eefcc0aee11db68674dd9d06be3e26702e4bbef85da6'),message_id=-1,performative=raw_transaction,raw_transaction=RawTransaction: ledger_id=ethereum, body={'tx_hash': '0xb292775b607766e1287d41af1ea7243dfc8282b06efb0bdfaaa6061326034977'},target=1)
+[2024-12-08 14:57:00,706] [INFO] [agent] Prize transfer hash data is 0xb292775b607766e1287d41af1ea7243dfc8282b06efb0bdfaaa6061326034977
+[2024-12-08 14:57:00,706] [INFO] [agent] Preparing bet resolution transaction
+[2024-12-08 14:57:00,724] [INFO] [agent] Resolve bet response msg is Message(sender=valory/ledger:0.19.0,to=valory/learning_chained_abci:0.1.0,dialogue_reference=('5064d223ed1184f130000fcb4c514c7f5808ace1de81959afdacd9cca3f19e3d', '26bae76d182408af4074ee354c5862ba924932e3ad753830d89076f9e618e3f4'),message_id=-1,performative=raw_transaction,raw_transaction=RawTransaction: ledger_id=ethereum, body={'data': b'? q\\\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x03\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00`\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00.QmYeD8rDATJjG8t3RdxDfSf3pmfsDnF7Ju99v,target=1)
+[2024-12-08 14:57:00,724] [INFO] [agent] Resolve bet tx data is b'? q\\\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x03\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00`\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00.QmYeD8rDATJjG8t3RdxDfSf3pmfsDnF7Ju99vjbmAJuaxG\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+[2024-12-08 14:57:01,095] [INFO] [agent] Building Safe tx hash for 0xA238CBeb142c10Ef7Ad8442C6D1f9E89e07e7761
+[2024-12-08 14:57:03,254] [INFO] [agent] Raw safe_tx_hash: 0xd075d6ea848152bdc86e1effe06ede018f6019b63ce20e8728af93a60fdea3c1
+[2024-12-08 14:57:03,254] [INFO] [agent] Processed safe_tx_hash length: 32 bytes
+[2024-12-08 14:57:03,254] [INFO] [agent] Processed safe_tx_hash hex: d075d6ea848152bdc86e1effe06ede018f6019b63ce20e8728af93a60fdea3c1
+[2024-12-08 14:57:03,255] [ERROR] [agent] Failed to process safe_tx_hash: cannot encode safe_tx_hash of non-32 bytes
+[2024-12-08 14:57:03,255] [ERROR] [agent] Failed to build safe tx hash
+[2024-12-08 14:57:03,256] [INFO] [agent] Preparing prize transfer transaction
+[2024-12-08 14:57:03,721] [INFO] [agent] Retrieved 1 objects from ipfs.
+[2024-12-08 14:57:05,929] [INFO] [agent] Prize transfer response msg is Message(sender=valory/ledger:0.19.0,to=valory/learning_chained_abci:0.1.0,dialogue_reference=('067e63e09e020422f9c665392d4f852f1787c2860d6204981093e4415f52794f', 'f3f9e0d7c617d3eabf1476661e7404f13bbdae8d7483ff4310e3b68929138b02'),message_id=-1,performative=raw_transaction,raw_transaction=RawTransaction: ledger_id=ethereum, body={'tx_hash': '0xb292775b607766e1287d41af1ea7243dfc8282b06efb0bdfaaa6061326034977'},target=1)
+[2024-12-08 14:57:05,929] [INFO] [agent] Prize transfer hash data is 0xb292775b607766e1287d41af1ea7243dfc8282b06efb0bdfaaa6061326034977
+[2024-12-08 14:57:05,929] [INFO] [agent] Preparing bet resolution transaction
+[2024-12-08 14:57:05,942] [INFO] [agent] Resolve bet response msg is Message(sender=valory/ledger:0.19.0,to=valory/learning_chained_abci:0.1.0,dialogue_reference=('bdc34293939e03620a6ca2d2bc646ad099215964d7d99e0d88ee849ad28bd3e1', '9e69a6e255e6da4e396616644417f0c08690538e9314d30093434feb3e6d4fcd'),message_id=-1,performative=raw_transaction,raw_transaction=RawTransaction: ledger_id=ethereum, body={'data': b'? q\\\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x03\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00`\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00.QmYeD8rDATJjG8t3RdxDfSf3pmfsDnF7Ju99v,target=1)
+[2024-12-08 14:57:05,942] [INFO] [agent] Resolve bet tx data is b'? q\\\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x03\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00`\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00.QmYeD8rDATJjG8t3RdxDfSf3pmfsDnF7Ju99vjbmAJuaxG\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+[2024-12-08 14:57:06,337] [INFO] [agent] Building Safe tx hash for 0xA238CBeb142c10Ef7Ad8442C6D1f9E89e07e7761
+[2024-12-08 14:57:08,686] [INFO] [agent] Raw safe_tx_hash: 0xd075d6ea848152bdc86e1effe06ede018f6019b63ce20e8728af93a60fdea3c1
+[2024-12-08 14:57:08,686] [INFO] [agent] Processed safe_tx_hash length: 32 bytes
+[2024-12-08 14:57:08,686] [INFO] [agent] Processed safe_tx_hash hex: d075d6ea848152bdc86e1effe06ede018f6019b63ce20e8728af93a60fdea3c1
+[2024-12-08 14:57:08,686] [ERROR] [agent] Failed to process safe_tx_hash: cannot encode safe_tx_hash of non-32 bytes
+[2024-12-08 14:57:08,686] [ERROR] [agent] Failed to build safe tx hash
+[2024-12-08 14:57:08,688] [INFO] [agent] Preparing prize transfer transaction
+[2024-12-08 14:57:10,047] [INFO] [agent] Retrieved 1 objects from ipfs.
