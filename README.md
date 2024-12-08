@@ -1,4 +1,3 @@
-```markdown
 # BetChain Learning Service
 
 A decentralized autonomous service that manages betting games comparing token holder counts between Arbitrum and Base networks using [Olas](https://olas.network/) framework and [Open Autonomy](https://github.com/valory-xyz/open-autonomy).
@@ -45,7 +44,7 @@ autonomy packages sync --update-packages
 
 # Generate keys
 autonomy generate-key ethereum -n 4
-```
+
 
 ## ⚙️ Configuration
 
