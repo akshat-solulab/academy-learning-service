@@ -39,8 +39,8 @@ class DataPullPayload(BaseTxPayload):
 class DecisionMakingPayload(BaseTxPayload):
     """Represent a transaction payload for the DecisionMakingRound."""
     event: str
-    result: str  # "win" or "lose"
-    prize_amount: str  # Store integer as string to avoid serialization issues
+    result: str 
+    prize_amount: str 
 
 
 @dataclass(frozen=True)
