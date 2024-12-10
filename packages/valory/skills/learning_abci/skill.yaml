@@ -7,12 +7,12 @@ license: Apache-2.0
 aea_version: '>=1.0.0, <2.0.0'
 fingerprint:
   __init__.py: bafybeiho3lkochqpmes4f235chq26oggmwnol3vjuvhosleoubbjirbwaq
-  behaviours.py: bafybeiazazanofs3py65zdfa3mqygvxb56go6izerkybz3ax6j6aseohsm
+  behaviours.py: bafybeigc5pmnp6vcsrbru37u3ywqp3bnmxhpwlxdhiknd6j4igbvcbhh3u
   dialogues.py: bafybeifqjbumctlffx2xvpga2kcenezhe47qhksvgmaylyp5ypwqgfar5u
   fsm_specification.yaml: bafybeigbbydxuqephdpatb3fp3sxnvr77bfvvo5hwjimxfpgyl32wupe64
   handlers.py: bafybeigjadr4thz6hfpfx5abezbwnqhbxmachf4efasrn4z2vqhsqgnyvi
   models.py: bafybeicuqo5u7mzfqblfzk7udzeog5vfqjownbowyp2pr6brcpxwaqhp7y
-  payloads.py: bafybeiacgvqmt5mznl76vgbbaouutargi2mydr22cgnx5q5ph6j22akk7y
+  payloads.py: bafybeidxmxtpeggt5c4wgwjbktecbfwy4sej5nxjcuypcozh4hgxtpklrq
   rounds.py: bafybeigoxn666kpimh2mvlkb2wagl22swoi7yeboawoprbqfscofcarrmu
 fingerprint_ignore_patterns: []
 connections: []

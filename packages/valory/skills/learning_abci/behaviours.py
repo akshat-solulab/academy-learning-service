@@ -371,6 +371,7 @@ class DecisionMakingBehaviour(
             
             # Get bet details from IPFS
             bet_details = yield from self.get_bet_details_from_ipfs()
+            self.context.logger.info(f"Bet details: {bet_details}")
             if bet_details is None:
                 # Handle error case
                 payload = DecisionMakingPayload(
@@ -405,8 +406,8 @@ class DecisionMakingBehaviour(
         base_holders = self.synchronized_data.base_holders
         
         # Get user's choice and bet amount from bet details list
-        user_choice = bet_details[0] if bet_details else 0
-        bet_amount = bet_details[1] if len(bet_details) > 1 else 0
+        user_choice = bet_details[1] if bet_details else 0
+        bet_amount = bet_details[2] if len(bet_details) > 1 else 0
         
         # Convert choice to chain selection (1 for arbitrum, 2 for base)
         user_selected = "arbitrum" if user_choice == 1 else "base"
