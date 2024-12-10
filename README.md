@@ -8,18 +8,18 @@ This agent service facilitates a decentralized betting game where:
 
 - Users can place bets on which chain has more token holders - Arbitrum or Base
 - Agent service automatically:
-    - Fetches current holder counts from Blockscout APIs 
-    - Determines winners based on actual holder numbers
-    - Calculates prizes proportional to holder count differences
-    - Executes prize payments and bet resolution transactions using Safe multisig
+  - Fetches current holder counts from Blockscout APIs
+  - Determines winners based on actual holder numbers
+  - Calculates prizes proportional to holder count differences
+  - Executes prize payments and bet resolution transactions using Safe multisig
 - BETCHAIN_CONTRACT_ADDRESS=0x8209b8E7C2585D3Ac6F7DfEE462b6f166B71e1bE
-
 
 ## 🏗️ Architecture
 
 Key Components:
+
 - [`DataPullBehaviour`](packages/valory/skills/learning_abci/behaviours.py) - Data fetching
-- [`DecisionMakingBehaviour`](packages/valory/skills/learning_abci/behaviours.py) - Winner determination 
+- [`DecisionMakingBehaviour`](packages/valory/skills/learning_abci/behaviours.py) - Winner determination
 - [`TxPreparationBehaviour`](packages/valory/skills/learning_abci/behaviours.py) - Transaction handling
 - [`BetChain`](packages/valory/contracts/betchain/contract.py) - Smart contract interface
 - [`LearningAbciApp`](packages/valory/skills/learning_abci/rounds.py) - ABCI state machine
@@ -35,12 +35,14 @@ Key Components:
 ## 🚀 Quick Start
 
 # Clone repository
+
 ```bash
 git clone https://github.com/akshat-solulab/academy-learning-service.git
 cd academy-learning-agent
 ```
 
 # Setup environment
+
 ```bash
 poetry shell
 poetry install
@@ -48,10 +50,10 @@ autonomy packages sync --update-packages
 ```
 
 # Generate keys
+
 ```bash
 autonomy generate-key ethereum -n 4
 ```
-
 
 ## ⚙️ Configuration
 
@@ -62,6 +64,7 @@ cp sample.env .env
 ```
 
 2. Configure variables:
+
 ```properties
 ALL_PARTICIPANTS=["0xB953...74"]
 GNOSIS_LEDGER_RPC=https://...
@@ -74,16 +77,19 @@ BETCHAIN_CONTRACT_ADDRESS=0x...
 ## 🏃 Running
 
 Single Agent:
+
 ```bash
 bash run_agent.sh
 ```
 
 Full Service (4 Agents):
+
 ```bash
 bash run_service.sh
 ```
 
 Monitor logs:
+
 ```bash
 docker logs -f learningservice_abci_0
 ```
@@ -91,4 +97,3 @@ docker logs -f learningservice_abci_0
 ## 📜 License
 
 Apache License 2.0
-
