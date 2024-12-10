@@ -617,7 +617,6 @@ class TxPreparationBehaviour(
 
     def get_native_transfer_data(self) -> Dict:
         """Get the native transaction data"""
-        # Send 1 wei to the recipient
         data = {VALUE_KEY: 1, TO_ADDRESS_KEY: self.params.transfer_target_address}
         self.context.logger.info(f"Native transfer data is {data}")
         return data
@@ -782,8 +781,6 @@ class TxPreparationBehaviour(
         
         if safe_tx_hash.startswith("0x"):
             safe_tx_hash = safe_tx_hash[2:]
-            #     # Convert hex string to bytes
-            # safe_tx_hash_bytes = bytes.fromhex(safe_tx_hash.zfill(64))  # Ensure 32 bytes (64 hex chars)
     
             # Generate final hash
             tx_hash = hash_payload_to_hex(
